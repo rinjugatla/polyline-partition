@@ -44,7 +44,7 @@ function rectSides(rect: RectSize): Segment[] {
 }
 
 /**
- * ノーディングの入力になる線分を集める
+ * ノーディングの入力になる線分を収集
  *
  * @param polylines すべてのポリライン
  * @param rect 基礎矩形の大きさ
@@ -55,7 +55,7 @@ export function collectSegments(polylines: readonly Polyline[], rect: RectSize):
 }
 
 /**
- * 点の列から、ε を超えて離れた点の個数を数える
+ * ε を超えて離れた点の個数
  *
  * @param points 数える点
  * @param epsilon 同値判定の許容誤差 ε
@@ -70,7 +70,7 @@ function countDistinctPoints(points: readonly Point[], epsilon: number): number 
 }
 
 /**
- * 2線分の組から、それぞれの線分を分ける点を求める
+ * 2線分の組から、それぞれの線分の分割点を算出
  *
  * 分割点は次の3種類である（仕様書 第7章）。
  * - 一方の端点が他方の線分から ε 以内にある場合の、その端点
@@ -101,7 +101,8 @@ function splitPair(first: Segment, second: Segment, epsilon: number): PairSplit 
 		crossing !== null &&
 		isPointNearSegment(crossing, first, epsilon) &&
 		isPointNearSegment(crossing, second, epsilon);
-	// 端点の分割点を先に並べ、同じ位置の交点が後から重複扱いで除かれるようにする
+	// 端点の分割点を先に並べ、同じ位置の交点が後から重複扱いで除かれるようにする。
+	// 端点と交点が ε 以内でずれる場合は頂点が最大 ε ずれるが、頂点の併合（手順4）で吸収する
 	return {
 		forFirst: hasCrossing ? [...secondEnds, crossing] : secondEnds,
 		forSecond: hasCrossing ? [...firstEnds, crossing] : firstEnds,
@@ -113,6 +114,7 @@ function splitPair(first: Segment, second: Segment, epsilon: number): PairSplit 
  * 点が線分上のどの位置にあるか
  *
  * 射影した位置を [0, 1] に収める。ε 以内で線分の外へはみ出した点は端に丸める。
+ * 線分の長さが 0 でないことを前提にする（0 除算を避けるため）。
  *
  * @param point 対象の点
  * @param segment 対象の線分
@@ -127,7 +129,7 @@ function ratioAlong(point: Point, segment: Segment): number {
 }
 
 /**
- * 線分を分割点で小線分に分ける
+ * 線分を分割点で小線分に分割
  *
  * 分割点は線分に沿った順に並べる。始点や終点、直前の分割点と ε 以内の点は重複として除く。
  *
@@ -166,8 +168,8 @@ export function nodeSegments(segments: readonly Segment[], epsilon: number): Nod
 	let hasCollinearOverlap = false;
 
 	for (const [i, first] of valid.entries()) {
-		for (const [j, second] of valid.entries()) {
-			if (j <= i) continue;
+		for (const [offset, second] of valid.slice(i + 1).entries()) {
+			const j = i + 1 + offset;
 			const pair = splitPair(first, second, epsilon);
 			splitPoints[i].push(...pair.forFirst);
 			splitPoints[j].push(...pair.forSecond);
@@ -182,7 +184,7 @@ export function nodeSegments(segments: readonly Segment[], epsilon: number): Nod
 }
 
 /**
- * 基礎矩形の外側にある小線分を除く
+ * 基礎矩形の外側にある小線分を除去
  *
  * 小線分の中点が矩形（境界を含む）から ε を超えて外にあるものを捨てる。
  * ノーディング後の小線分は交点で分かれているので、中点で内外を代表できる。

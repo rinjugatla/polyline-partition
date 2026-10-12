@@ -30,6 +30,16 @@ const OUT = 20;
 const IN = 30;
 /** 離れた線分の間隔 */
 const GAP = 3;
+/** 2進数で正確に表せ、座標の加減算で誤差が出ない ε（ちょうど ε の境界条件用） */
+const EXACT_EPSILON = 0.5;
+/** ほぼ共線とみなせるずれ（EXACT_EPSILON の半分） */
+const SMALL_OFFSET = 0.25;
+/** ε をわずかに超える線分の長さ */
+const BEYOND_EPSILON_LENGTH = 0.75;
+/** 斜めの線分の端の高さ */
+const SLOPE_RISE = 5;
+/** 斜めに交わる点の高さ */
+const SLOPE_CROSS_Y = 2.5;
 /** ε の半分（ε 以内のずれを作る） */
 const HALF = 0.5;
 
@@ -220,6 +230,55 @@ describe('ノーディング', () => {
 			expect(result.hasCollinearOverlap).toBe(false);
 		});
 
+		it('斜めに交わる2本の線分を、交点の座標で4つの小線分に分ける', () => {
+			const rising = seg(NEAR, NEAR, FAR, SLOPE_RISE);
+			const falling = seg(NEAR, SLOPE_RISE, FAR, NEAR);
+
+			const result = nodeSegments([rising, falling], DEFAULT_EPSILON);
+
+			expectSegmentsClose(result.segments, [
+				seg(NEAR, NEAR, MID, SLOPE_CROSS_Y),
+				seg(MID, SLOPE_CROSS_Y, FAR, SLOPE_RISE),
+				seg(NEAR, SLOPE_RISE, MID, SLOPE_CROSS_Y),
+				seg(MID, SLOPE_CROSS_Y, FAR, NEAR)
+			]);
+		});
+
+		it('長さがちょうど ε の線分は無視する', () => {
+			const exact = seg(MID, MID, MID + EXACT_EPSILON, MID);
+
+			const result = nodeSegments([exact], EXACT_EPSILON);
+
+			expect(result.segments).toEqual([]);
+		});
+
+		it('長さが ε をわずかに超える線分は無視しない', () => {
+			const beyond = seg(MID, MID, MID + BEYOND_EPSILON_LENGTH, MID);
+
+			const result = nodeSegments([beyond], EXACT_EPSILON);
+
+			expect(result.segments).toEqual([beyond]);
+		});
+
+		it('ε 以内のずれで平行に重なる2線分も、共線の重なりとして記録する', () => {
+			const first = seg(NEAR, NEAR, FAR, NEAR);
+			const second = seg(MID, SMALL_OFFSET, OVERLAP_END, SMALL_OFFSET);
+
+			const result = nodeSegments([first, second], EXACT_EPSILON);
+
+			expect(result.segments).toHaveLength(NESTED_PIECE_COUNT);
+			expect(result.hasCollinearOverlap).toBe(true);
+		});
+
+		it('同じ線分が2回入ると、同じ小線分が2本出力され、重なりを記録する', () => {
+			const line = seg(NEAR, NEAR, FAR, NEAR);
+
+			const result = nodeSegments([line, line], DEFAULT_EPSILON);
+
+			expectSegmentsClose(result.segments, [line, line]);
+			expect(result.hasCollinearOverlap).toBe(true);
+		});
+
 		it('端点どうしで接するL字は分割せず、重なりも記録しない', () => {
 			const first = seg(NEAR, NEAR, MID, NEAR);
 			const second = seg(MID, NEAR, MID, MID);
@@ -305,7 +364,11 @@ describe('矩形外の除去', () => {
 			const kept = removeOutsideSegments(noded.segments, RECT, DEFAULT_EPSILON);
 
 			// 貫く線分は左右の境界で3つに分かれ、矩形の内側の1つだけが残る
-			const insideThrough = kept.filter((piece) => piece.start.y === MID && piece.end.y === MID);
+			const insideThrough = kept.filter(
+				(piece) =>
+					Math.abs(piece.start.y - MID) <= DEFAULT_EPSILON &&
+					Math.abs(piece.end.y - MID) <= DEFAULT_EPSILON
+			);
 			expect(insideThrough).toHaveLength(1);
 		});
 	});
