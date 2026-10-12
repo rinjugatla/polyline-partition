@@ -14,6 +14,6 @@ export default defineConfig({
 		port: PREVIEW_PORT,
 		reuseExistingServer: !process.env.CI
 	},
-	use: { baseURL: `http://localhost:${PREVIEW_PORT}`, viewport: VIEWPORT },
+	use: { baseURL: `http://localhost:${PREVIEW_PORT}` },
 	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: VIEWPORT } }]
 });

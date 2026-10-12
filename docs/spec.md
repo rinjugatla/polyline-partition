@@ -450,7 +450,7 @@ GitHub Pages へのデプロイは次の設定で行う。
 - 公開 URL は `https://<ユーザー名>.github.io/polyline-partition/`
 - `vite.config.ts` の `sveltekit()` に adapter-static を渡し、`paths.base` は環境変数 `BASE_PATH` から取る。本番ビルドだけ `/polyline-partition` を渡し、開発時は空にする
 - `static/.nojekyll` を置く
-- GitHub Actions は `main` への push で動かす。先に `pnpm check`、`pnpm lint`、`pnpm test`、`pnpm test:e2e` を実行し、すべて通ったら `BASE_PATH` 付きでビルドして `deploy-pages` で公開する。E2E は `BASE_PATH` なしのビルドに対して実行する
+- GitHub Actions は `main` への push で動かす（PR では検証のみを行い、公開はしない）。先に `pnpm check`、`pnpm lint`、`pnpm test`、`pnpm test:e2e` を実行し、すべて通ったら `BASE_PATH` 付きでビルドして `deploy-pages` で公開する。E2E は `BASE_PATH` なしのビルドに対して実行する
 - リポジトリ設定の Pages の Source は「GitHub Actions」にする
 
 Claude Code での実装は、次の順に進めることを推奨する。

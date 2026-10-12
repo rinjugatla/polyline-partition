@@ -11,7 +11,7 @@ const ALLOWED_NUMBERS = [0, 1, -1, 2];
 /** max-depth の上限（AGENTS.md 4.2 の「3段を超えない」） */
 const MAX_NESTING_DEPTH = 3;
 
-/** 規約（AGENTS.md 4.7）で、ドキュメントコメントを必須にする対象 */
+/** 規約（AGENTS.md 4.4）で、ドキュメントコメントを必須にする対象 */
 const JSDOC_REQUIRED_CONTEXTS = [
 	'TSTypeAliasDeclaration',
 	'TSPropertySignature',
