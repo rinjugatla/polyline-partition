@@ -45,7 +45,13 @@ export default ts.config(
 	},
 	{
 		files: ['**/*.ts'],
-		ignores: ['**/*.test.ts', 'src/lib/utils.ts', 'src/app.d.ts'],
+		ignores: [
+			'**/*.test.ts',
+			'**/*.spec.ts',
+			'playwright.config.ts',
+			'src/lib/utils.ts',
+			'src/app.d.ts'
+		],
 		plugins: { jsdoc },
 		rules: {
 			'jsdoc/require-jsdoc': [
