@@ -55,9 +55,10 @@ polyline-partition の実装を、Windows 上の Claude Code に引き継ぐた�
 
 | 項目 | 内容 |
 | --- | --- |
-| 雛形 | SvelteKit 2 と Svelte 5、TypeScript（strict）、pnpm。`sv create` の最小構成から始める |
+| 雛形 | SvelteKit 3 と Svelte 5、TypeScript（strict）、pnpm。`sv create` の最小構成から始める |
 | 静的サイト | `@sveltejs/adapter-static`。`src/routes/+layout.ts` に `prerender = true` |
-| GitHub Pages | 環境変数 `BASE_PATH` を `svelte.config.js` の `paths.base` に渡す（本番は `/polyline-partition`）。`static/.nojekyll` を置く |
+| GitHub Pages | 環境変数 `BASE_PATH` を `vite.config.ts` の `sveltekit()` の `paths.base` に渡す（本番は `/polyline-partition`）。`static/.nojekyll` を置く |
+| パスエイリアス | SvelteKit 3 は `$lib` ではなく `#lib`（`package.json` の `imports`）を使う。shadcn-svelte の alias も `#lib` で設定する |
 | UI | shadcn-svelte を導入（Tailwind CSS v4、Bits UI、`components.json`、部品は `src/lib/components/ui`）。部品は必要になるまで追加しない |
 | 単体テスト | Vitest。`passWithNoTests` に頼らず、日本語 3 階層の名前で書いた小さなテストを 1 件置く |
 | E2E テスト | Playwright（Chromium のみ）。`e2e/` に起動確認の 1 件だけ置く |
@@ -101,7 +102,7 @@ jsdoc プラグインでは「1 行目に句点なし」「〜かどうか禁止
 次は追加してよい。これ以外はユーザーに相談する。
 
 - 実行時: なし（幾何、面抽出、色付け、保存はすべて自前実装）
-- UI: shadcn-svelte に伴う Tailwind CSS、Bits UI、`clsx`、`tailwind-merge`、`tailwind-variants` など CLI が追加するもの
+- UI: shadcn-svelte に伴う Tailwind CSS、Bits UI、`cn`（shadcn 公式のクラス結合ライブラリ）、`tailwind-variants` など CLI が追加するもの
 - 開発時: `@sveltejs/adapter-static`、Vitest、Playwright、ESLint 一式、Prettier 一式、svelte-check、fast-check、husky、lint-staged、`@commitlint/cli`、`@commitlint/config-conventional`
 
 バージョンはこの文書に固定せず、導入時点の安定版を使う。

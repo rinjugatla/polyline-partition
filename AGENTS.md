@@ -5,7 +5,7 @@ polyline-partition の開発に参加する AI エージェント（Claude Code 
 ## 1. プロジェクトの概要
 
 - 基礎矩形（分割対象の矩形）をポリライン（直線をつないだ折れ線）で区画に分割し、区画をランダムな色で塗り分けて表示する Web アプリ。
-- SvelteKit 2 / Svelte 5 / TypeScript の静的サイトで、GitHub Pages に配信する。開発はローカルで行う。
+- SvelteKit 3 / Svelte 5 / TypeScript の静的サイトで、GitHub Pages に配信する。開発はローカルで行う。
 - 面抽出（平面グラフから面を取り出す処理）は学習目的で自前実装する。外部の幾何ライブラリは使わない。
 - 詳細な仕様、画面、アルゴリズム、テスト観点は `docs/spec.md` を読むこと。
 

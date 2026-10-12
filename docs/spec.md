@@ -371,11 +371,11 @@ describe('頂点の併合', () => {
 
 ## 9. 技術スタック・開発環境・デプロイ
 
-アプリは SvelteKit 2、Svelte 5、TypeScript の静的サイトとして GitHub Pages に配信し、開発はローカルで行い、実装は Claude Code で進める。リポジトリ名は `polyline-partition` とする。
+アプリは SvelteKit 3、Svelte 5、TypeScript の静的サイトとして GitHub Pages に配信し、開発はローカルで行い、実装は Claude Code で進める。リポジトリ名は `polyline-partition` とする。
 
 | 項目 | 採用 |
 | --- | --- |
-| フレームワーク | Svelte 5（runes）、SvelteKit 2。UI 部品は shadcn-svelte（Tailwind CSS、Bits UI） |
+| フレームワーク | Svelte 5（runes）、SvelteKit 3。UI 部品は shadcn-svelte（Tailwind CSS、Bits UI） |
 | 言語 | TypeScript（strict） |
 | ビルド | Vite（SvelteKit 標準）、adapter-static（`prerender = true`） |
 | パッケージ管理 | pnpm |
@@ -442,13 +442,13 @@ polyline-partition/
 ├─ e2e/
 ├─ static/.nojekyll
 ├─ .github/workflows/deploy.yml
-└─ svelte.config.js / vite.config.ts / playwright.config.ts
+└─ vite.config.ts（SvelteKit 3 は svelte.config.js を使わない） / playwright.config.ts
 ```
 
 GitHub Pages へのデプロイは次の設定で行う。
 
 - 公開 URL は `https://<ユーザー名>.github.io/polyline-partition/`
-- `svelte.config.js` で adapter-static を使い、`paths.base` は環境変数 `BASE_PATH` から取る。本番ビルドだけ `/polyline-partition` を渡し、開発時は空にする
+- `vite.config.ts` の `sveltekit()` に adapter-static を渡し、`paths.base` は環境変数 `BASE_PATH` から取る。本番ビルドだけ `/polyline-partition` を渡し、開発時は空にする
 - `static/.nojekyll` を置く
 - GitHub Actions は `main` への push で動かす。先に `pnpm check`、`pnpm lint`、`pnpm test`、`pnpm test:e2e` を実行し、すべて通ったら `BASE_PATH` 付きでビルドして `deploy-pages` で公開する。E2E は `BASE_PATH` なしのビルドに対して実行する
 - リポジトリ設定の Pages の Source は「GitHub Actions」にする
@@ -479,7 +479,7 @@ AI ツールは Claude Code 用の設定をリポジトリに含める。Svelte 
 | 座標系 | 右手座標系（Y 軸上向き）。画面描画時にだけ Y 軸を反転 | 指定 |
 | 分割アルゴリズム | 平面グラフの面抽出を自前で実装 | 指定 |
 | 同値判定 | 許容誤差 ε。デフォルト 0.01、設定で変更できる（範囲 0.0001〜1） | 指定 |
-| 技術 | SvelteKit 2、Svelte 5、TypeScript、静的サイト | 指定 |
+| 技術 | SvelteKit 3、Svelte 5、TypeScript、静的サイト | 指定 |
 | デプロイ | GitHub Pages、リポジトリ名 `polyline-partition` | 指定 |
 | スナップと軸拘束 | グリッドスナップはデフォルト ON、刻み 10。Shift を押している間は水平または垂直に拘束 | 指定 |
 | Undo / Redo | ショートカットキーとサイドパネルのボタンの両方 | 指定 |
