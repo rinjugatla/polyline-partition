@@ -11,6 +11,9 @@ import {
 	MIN_SNAP_STEP
 } from './constants';
 
+/** 仕様書 第6章に書かれた ε の下限 */
+const SPEC_MIN_EPSILON = 0.0001;
+
 describe('設定値の定数', () => {
 	describe('正常系', () => {
 		it('既定値が、それぞれ許容範囲の内側にある', () => {
@@ -33,7 +36,7 @@ describe('設定値の定数', () => {
 
 	describe('境界条件', () => {
 		it('ε の下限と上限が仕様書の値と一致する', () => {
-			expect(MIN_EPSILON).toBe(0.0001);
+			expect(MIN_EPSILON).toBe(SPEC_MIN_EPSILON);
 			expect(MAX_EPSILON).toBe(1);
 		});
 	});
