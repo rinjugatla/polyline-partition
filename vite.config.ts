@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
@@ -16,6 +17,7 @@ function toBasePath(value: string | undefined): '' | `/${string}` {
 
 export default defineConfig({
 	plugins: [
+		tailwindcss(),
 		sveltekit({
 			adapter: adapter(),
 			paths: { base: toBasePath(process.env.BASE_PATH) },
