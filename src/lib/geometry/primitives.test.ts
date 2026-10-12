@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_EPSILON } from '../constants';
 import {
+	areSegmentsCollinear,
 	distanceBetween,
+	distancePointToLine,
 	distancePointToSegment,
 	distanceToRect,
+	findLineIntersection,
 	findSegmentIntersection,
 	isPointNearSegment,
 	isSamePoint,
 	passesThroughRectInterior,
+	pointAt,
 	segmentDistance,
 	signedArea
 } from './primitives';
@@ -428,6 +432,113 @@ describe('線分が矩形の内部を通るか', () => {
 			const segment = horizontal(-OUTSIDE_OFFSET, RECT.width + OUTSIDE_OFFSET, DEFAULT_EPSILON * 2);
 
 			expect(passesThroughRectInterior(segment, RECT, DEFAULT_EPSILON)).toBe(true);
+		});
+	});
+});
+
+describe('点と直線の距離', () => {
+	describe('正常系', () => {
+		it('線分の延長線上にある点も、直線までの垂線の長さが距離になる', () => {
+			const segment = horizontal(0, HORIZONTAL_LENGTH, 0);
+
+			const distance = distancePointToLine({ x: HORIZONTAL_LENGTH * 2, y: OFFSET }, segment);
+
+			expect(distance).toBeCloseTo(OFFSET, COORDINATE_PRECISION);
+		});
+	});
+
+	describe('異常系', () => {
+		it('長さ0の線分は端点との距離を返す', () => {
+			const degenerate = horizontal(MID_X, MID_X, 0);
+
+			const distance = distancePointToLine({ x: MID_X + SHORT_SIDE, y: LONG_SIDE }, degenerate);
+
+			expect(distance).toBeCloseTo(HYPOTENUSE, COORDINATE_PRECISION);
+		});
+	});
+
+	describe('境界条件', () => {
+		it('直線上の点は距離が 0 になる', () => {
+			const segment = horizontal(0, HORIZONTAL_LENGTH, 0);
+
+			expect(distancePointToLine({ x: -OFFSET, y: 0 }, segment)).toBe(0);
+		});
+	});
+});
+
+describe('直線どうしの交点', () => {
+	describe('正常系', () => {
+		it('線分の範囲外でも、延長した直線どうしの交点を返す', () => {
+			const first = horizontal(0, SHORT_SIDE, 0);
+			const second: Segment = {
+				start: { x: MID_X, y: SHORT_SIDE },
+				end: { x: MID_X, y: HORIZONTAL_LENGTH }
+			};
+
+			const intersection = findLineIntersection(first, second);
+
+			expectPointClose(intersection, { x: MID_X, y: 0 });
+		});
+	});
+
+	describe('異常系', () => {
+		it('平行な直線は交点なしになる', () => {
+			const first = horizontal(0, HORIZONTAL_LENGTH, 0);
+			const second = horizontal(0, HORIZONTAL_LENGTH, SHORT_SIDE);
+
+			expect(findLineIntersection(first, second)).toBeNull();
+		});
+	});
+
+	describe('境界条件', () => {
+		it('線分上の位置 0 と 1 は、始点と終点に一致する', () => {
+			const segment = horizontal(MID_X, HORIZONTAL_LENGTH, SHORT_SIDE);
+
+			expectPointClose(pointAt(segment, 0), segment.start);
+			expectPointClose(pointAt(segment, 1), segment.end);
+		});
+	});
+});
+
+describe('共線の判定', () => {
+	describe('正常系', () => {
+		it('同一直線上で重なる2線分は共線とみなす', () => {
+			const first = horizontal(0, HORIZONTAL_LENGTH, 0);
+			const second = horizontal(OVERLAP_START, OVERLAP_END, 0);
+
+			expect(areSegmentsCollinear(first, second, DEFAULT_EPSILON)).toBe(true);
+		});
+
+		it('交差する2線分は共線とみなさない', () => {
+			const first: Segment = { start: { x: 0, y: 0 }, end: { x: DIAGONAL_END, y: DIAGONAL_END } };
+			const second: Segment = { start: { x: 0, y: DIAGONAL_END }, end: { x: DIAGONAL_END, y: 0 } };
+
+			expect(areSegmentsCollinear(first, second, DEFAULT_EPSILON)).toBe(false);
+		});
+	});
+
+	describe('異常系', () => {
+		it('平行でも離れた2線分は共線とみなさない', () => {
+			const first = horizontal(0, HORIZONTAL_LENGTH, 0);
+			const second = horizontal(0, HORIZONTAL_LENGTH, SHORT_SIDE);
+
+			expect(areSegmentsCollinear(first, second, DEFAULT_EPSILON)).toBe(false);
+		});
+	});
+
+	describe('境界条件', () => {
+		it('一方の両端点が直線から ε ちょうどの距離なら共線とみなす', () => {
+			const first = horizontal(0, HORIZONTAL_LENGTH, 0);
+			const second = horizontal(OVERLAP_START, OVERLAP_END, DEFAULT_EPSILON);
+
+			expect(areSegmentsCollinear(first, second, DEFAULT_EPSILON)).toBe(true);
+		});
+
+		it('短い線分の両端点が長い線分の直線に近ければ、逆向きの判定でも共線とみなす', () => {
+			const longSegment = horizontal(0, OVERLAP_END * 2, 0);
+			const shortSegment = horizontal(OVERLAP_START, HORIZONTAL_LENGTH, DEFAULT_EPSILON);
+
+			expect(areSegmentsCollinear(shortSegment, longSegment, DEFAULT_EPSILON)).toBe(true);
 		});
 	});
 });

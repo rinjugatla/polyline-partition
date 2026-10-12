@@ -79,6 +79,40 @@ export function isPointNearSegment(point: Point, segment: Segment, epsilon: numb
 	return distancePointToSegment(point, segment) <= epsilon;
 }
 
+/** 2直線の交点を、各線分上の位置で表したもの */
+type LineIntersectionParams = {
+	/** 1つ目の線分上の位置（0 が始点、1 が終点） */
+	readonly t: number;
+	/** 2つ目の線分上の位置（0 が始点、1 が終点） */
+	readonly u: number;
+};
+
+/**
+ * 2本の直線の交点を、各線分上の位置で求める
+ *
+ * @param first 1つ目の線分
+ * @param second 2つ目の線分
+ * @returns 位置の組。平行（外積が 0）なら null
+ */
+function solveLineIntersection(first: Segment, second: Segment): LineIntersectionParams | null {
+	const firstDx = first.end.x - first.start.x;
+	const firstDy = first.end.y - first.start.y;
+	const secondDx = second.end.x - second.start.x;
+	const secondDy = second.end.y - second.start.y;
+
+	const cross = firstDx * secondDy - firstDy * secondDx;
+	// 0 除算を避けるガード。ほぼ平行な場合も、呼び出し側の範囲検査を通った解は実際の交点になる
+	if (cross === 0) return null;
+
+	// first 上の位置 t と second 上の位置 u を、連立方程式の解として求める
+	const gapX = second.start.x - first.start.x;
+	const gapY = second.start.y - first.start.y;
+	return {
+		t: (gapX * secondDy - gapY * secondDx) / cross,
+		u: (gapX * firstDy - gapY * firstDx) / cross
+	};
+}
+
 /**
  * 2線分の交点
  *
@@ -90,23 +124,78 @@ export function isPointNearSegment(point: Point, segment: Segment, epsilon: numb
  * @returns 交点。交わらない、または平行なら null
  */
 export function findSegmentIntersection(first: Segment, second: Segment): Point | null {
-	const firstDx = first.end.x - first.start.x;
-	const firstDy = first.end.y - first.start.y;
-	const secondDx = second.end.x - second.start.x;
-	const secondDy = second.end.y - second.start.y;
+	const params = solveLineIntersection(first, second);
+	if (params === null) return null;
 
-	const cross = firstDx * secondDy - firstDy * secondDx;
-	// 0 除算を避けるガード。ほぼ平行な場合も、後続の範囲検査を通った解は実際の交点になる
-	if (cross === 0) return null;
-
-	// first 上の位置 t と second 上の位置 u を、連立方程式の解として求める
-	const gapX = second.start.x - first.start.x;
-	const gapY = second.start.y - first.start.y;
-	const t = (gapX * secondDy - gapY * secondDx) / cross;
-	const u = (gapX * firstDy - gapY * firstDx) / cross;
+	const { t, u } = params;
 	if (t < 0 || t > 1 || u < 0 || u > 1) return null;
 
-	return { x: first.start.x + t * firstDx, y: first.start.y + t * firstDy };
+	return pointAt(first, t);
+}
+
+/**
+ * 2本の直線の交点
+ *
+ * 線分の範囲を無視して、延長した直線どうしの交点を返す。
+ * ε 以内の端点のずれを許す交点判定で、交点が両方の線分の近くにあるかは呼び出し側が調べる。
+ *
+ * @param first 1つ目の線分
+ * @param second 2つ目の線分
+ * @returns 交点。平行なら null
+ */
+export function findLineIntersection(first: Segment, second: Segment): Point | null {
+	const params = solveLineIntersection(first, second);
+	return params === null ? null : pointAt(first, params.t);
+}
+
+/**
+ * 線分上の位置に対応する点
+ *
+ * @param segment 対象の線分
+ * @param ratio 位置（0 が始点、1 が終点。範囲外なら延長線上）
+ * @returns 位置に対応する点
+ */
+export function pointAt(segment: Segment, ratio: number): Point {
+	return {
+		x: segment.start.x + ratio * (segment.end.x - segment.start.x),
+		y: segment.start.y + ratio * (segment.end.y - segment.start.y)
+	};
+}
+
+/**
+ * 点から、線分を含む直線までの距離
+ *
+ * 長さ0の線分は端点との距離を返す。
+ *
+ * @param point 対象の点
+ * @param segment 直線を決める線分
+ * @returns 点と直線の距離
+ */
+export function distancePointToLine(point: Point, segment: Segment): number {
+	const dx = segment.end.x - segment.start.x;
+	const dy = segment.end.y - segment.start.y;
+	const length = Math.hypot(dx, dy);
+	if (length === 0) return distanceBetween(point, segment.start);
+
+	const cross = dx * (point.y - segment.start.y) - dy * (point.x - segment.start.x);
+	return Math.abs(cross) / length;
+}
+
+/**
+ * 2線分が共線とみなせるか
+ *
+ * 一方の両端点が、他方を含む直線から ε 以内にあれば共線とする（仕様書 第7章）。
+ *
+ * @param first 1つ目の線分
+ * @param second 2つ目の線分
+ * @param epsilon 同値判定の許容誤差 ε
+ * @returns 共線か
+ */
+export function areSegmentsCollinear(first: Segment, second: Segment, epsilon: number): boolean {
+	const isOnLine = (line: Segment, other: Segment): boolean =>
+		distancePointToLine(other.start, line) <= epsilon &&
+		distancePointToLine(other.end, line) <= epsilon;
+	return isOnLine(first, second) || isOnLine(second, first);
 }
 
 /**
