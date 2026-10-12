@@ -14,7 +14,11 @@ export type Segment = {
 	readonly end: Point;
 };
 
-/** 基礎矩形の大きさ。原点 (0, 0) から (width, height) までの領域 */
+/**
+ * 基礎矩形の大きさ
+ *
+ * 原点 (0, 0) から (width, height) までの領域。
+ */
 export type RectSize = {
 	/** 幅 W */
 	readonly width: number;
@@ -22,7 +26,11 @@ export type RectSize = {
 	readonly height: number;
 };
 
-/** ポリライン。始点と終点は基礎矩形の外側に置く */
+/**
+ * ポリライン
+ *
+ * 始点と終点は基礎矩形の外側に置く。
+ */
 export type Polyline = {
 	/** ポリラインを識別する ID */
 	readonly id: string;

@@ -57,3 +57,10 @@ export const MAX_SNAP_STEP = 1000;
  * 3点以上でなければ囲まれた領域ができない。
  */
 export const MIN_POLYGON_VERTICES = 3;
+
+/**
+ * ポリラインの頂点数の下限
+ *
+ * 線分が1本もなければ線にならない。
+ */
+export const MIN_VERTEX_COUNT = 2;

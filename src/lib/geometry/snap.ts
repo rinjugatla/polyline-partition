@@ -6,7 +6,11 @@ export type InputPointRequest = {
 	readonly point: Point;
 	/** グリッドスナップの設定 */
 	readonly snap: SnapSettings;
-	/** 軸拘束の基準にする頂点。基準がない（最初の頂点など）ときは null */
+	/**
+	 * 軸拘束の基準にする頂点
+	 *
+	 * 基準がない（最初の頂点など）ときは null。
+	 */
 	readonly axisBase: Point | null;
 	/** Shift による軸拘束を求められているか */
 	readonly isAxisConstrained: boolean;

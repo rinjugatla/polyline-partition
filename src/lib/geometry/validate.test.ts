@@ -254,6 +254,17 @@ describe('ポリラインの入力検証', () => {
 			expect(violatedRules(vertices, undefined, EXACT_EPSILON)).toContain('V-02');
 		});
 
+		it('V-04: 長さ0の線分をはさんだ隣の線分は、V-02 とは別に自己接触として報告しない', () => {
+			const vertices: Point[] = [
+				{ x: -OUT, y: MID },
+				{ x: MID, y: MID },
+				{ x: MID + EXACT_EPSILON, y: MID },
+				{ x: RECT.width + OUT, y: MID + SHORT }
+			];
+
+			expect(violatedRules(vertices, undefined, EXACT_EPSILON)).toEqual(['V-02']);
+		});
+
 		it('V-04: 隣接する線分が共有頂点だけで接するポリラインを受理する', () => {
 			const vertices: Point[] = [
 				{ x: -OUT, y: MID },

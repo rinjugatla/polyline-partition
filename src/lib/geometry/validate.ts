@@ -1,4 +1,4 @@
-import { MAX_COORDINATE } from '../constants';
+import { MAX_COORDINATE, MIN_VERTEX_COUNT } from '../constants';
 import {
 	distanceBetween,
 	distanceToRect,
@@ -11,7 +11,11 @@ import type { Point, RectSize, Segment } from './types';
 /** ポリラインの検証規則の ID（仕様書 第4章） */
 export type RuleId = 'V-01' | 'V-02' | 'V-03' | 'V-04' | 'V-05' | 'V-06';
 
-/** すべての検証規則。違反は、この順に並べて返す */
+/**
+ * すべての検証規則
+ *
+ * 違反は、この順に並べて返す。
+ */
 export const ALL_RULE_IDS: readonly RuleId[] = ['V-01', 'V-02', 'V-03', 'V-04', 'V-05', 'V-06'];
 
 /** 検証規則の違反 */
@@ -36,7 +40,11 @@ export type ValidationFailure = {
 	readonly violations: readonly Violation[];
 };
 
-/** 検証の結果。想定内の失敗なので、例外ではなく判別共用体で返す */
+/**
+ * 検証の結果
+ *
+ * 想定内の失敗なので、例外ではなく判別共用体で返す。
+ */
 export type ValidationResult = ValidationSuccess | ValidationFailure;
 
 /** ポリライン検証の入力 */
@@ -47,7 +55,11 @@ export type ValidationRequest = {
 	readonly rect: RectSize;
 	/** 同値判定の許容誤差 ε */
 	readonly epsilon: number;
-	/** 検査する規則。省略すると全規則。場面ごとに検査する規則が違う（仕様書 第4章） */
+	/**
+	 * 検査する規則
+	 *
+	 * 省略すると全規則。場面ごとに検査する規則が違う（仕様書 第4章）。
+	 */
 	readonly rules?: readonly RuleId[];
 };
 
@@ -134,9 +146,6 @@ function isCrossingPair(pair: SegmentPair, epsilon: number): boolean {
 	return segmentDistance(pair.first, pair.second) <= epsilon;
 }
 
-/** V-01: 頂点は2個以上 */
-const MIN_VERTEX_COUNT = 2;
-
 /**
  * V-01 を検査
  *
@@ -173,20 +182,18 @@ function violatesV03(context: RuleContext): boolean {
 /**
  * V-04 を検査
  *
- * 長さ0の線分は V-02 で報告するため、ここでは調べない。
+ * 長さ0の線分は V-02 で報告するため取り除き、残った線分の並びで隣接を判断する。
+ * 取り除かないと、長さ0の線分の両隣が非隣接として扱われ、共有頂点の接触を二重に報告する。
  *
  * @param context 検査の情報
  * @returns 違反か
  */
 function violatesV04(context: RuleContext): boolean {
-	const { segments, epsilon } = context;
+	const { epsilon } = context;
+	const segments = context.segments.filter((segment) => !isDegenerate(segment, epsilon));
 	for (const [i, first] of segments.entries()) {
-		if (isDegenerate(first, epsilon)) continue;
 		const isCrossing = segments.some(
-			(second, j) =>
-				j > i &&
-				!isDegenerate(second, epsilon) &&
-				isCrossingPair({ first, second, gap: j - i }, epsilon)
+			(second, j) => j > i && isCrossingPair({ first, second, gap: j - i }, epsilon)
 		);
 		if (isCrossing) return true;
 	}

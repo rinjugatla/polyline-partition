@@ -56,6 +56,7 @@ export function distancePointToSegment(point: Point, segment: Segment): number {
 	const dx = end.x - start.x;
 	const dy = end.y - start.y;
 	const lengthSquared = dx * dx + dy * dy;
+	// 0 除算を避けるガード。ε 以下の短い線分の扱いは呼び出し側（V-02）が決める
 	if (lengthSquared === 0) return distanceBetween(point, start);
 
 	// 射影の位置を [0, 1] に収め、線分の外へはみ出した分を端点に丸める
@@ -95,6 +96,7 @@ export function findSegmentIntersection(first: Segment, second: Segment): Point 
 	const secondDy = second.end.y - second.start.y;
 
 	const cross = firstDx * secondDy - firstDy * secondDx;
+	// 0 除算を避けるガード。ほぼ平行な場合も、後続の範囲検査を通った解は実際の交点になる
 	if (cross === 0) return null;
 
 	// first 上の位置 t と second 上の位置 u を、連立方程式の解として求める
@@ -168,6 +170,7 @@ export function passesThroughRectInterior(
 ): boolean {
 	const dx = segment.end.x - segment.start.x;
 	const dy = segment.end.y - segment.start.y;
+	// 長さ0の線分は通る長さを持たない。0 除算を避けるガードも兼ねる
 	if (dx === 0 && dy === 0) return false;
 
 	// 縮めた領域の4辺ごとに、線分上の位置 t の有効範囲を絞り込む
