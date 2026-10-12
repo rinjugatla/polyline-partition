@@ -7,7 +7,7 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''",
+		"prepare": "husky; svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"lint": "eslint .",
 		"format": "prettier --write .",
@@ -15,6 +15,8 @@
 		"test:e2e": "playwright test"
 	},
 	"devDependencies": {
+		"@commitlint/cli": "^21.2.3",
+		"@commitlint/config-conventional": "^21.2.3",
 		"@eslint/js": "^10.0.1",
 		"@fontsource-variable/roboto": "^5.3.0",
 		"@playwright/test": "^1.64.0",
@@ -30,6 +32,8 @@
 		"eslint-plugin-svelte": "^3.23.1",
 		"fast-check": "^4.10.2",
 		"globals": "^17.13.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^17.6.0",
 		"prettier": "^3.9.10",
 		"prettier-plugin-svelte": "^4.1.1",
 		"remixicon-svelte": "^0.0.5",
