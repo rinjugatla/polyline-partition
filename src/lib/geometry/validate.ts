@@ -4,7 +4,8 @@ import {
 	distanceToRect,
 	isPointNearSegment,
 	passesThroughRectInterior,
-	segmentDistance
+	segmentDistance,
+	toSegments
 } from './primitives';
 import type { Point, RectSize, Segment } from './types';
 
@@ -84,16 +85,6 @@ const RULE_MESSAGES: Readonly<Record<RuleId, string>> = {
 	'V-05': `座標は ±${MAX_COORDINATE} の範囲内にしてください`,
 	'V-06': '基礎矩形の内部を通る線にしてください'
 };
-
-/**
- * 連続する頂点を結んで線分の列にする
- *
- * @param vertices 順につなぐ頂点
- * @returns 線分の列（頂点が1個以下なら空）
- */
-function toSegments(vertices: readonly Point[]): Segment[] {
-	return vertices.slice(1).map((end, index) => ({ start: vertices[index], end }));
-}
 
 /**
  * 線分が長さ0とみなせるか

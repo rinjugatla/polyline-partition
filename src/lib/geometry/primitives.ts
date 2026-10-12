@@ -284,3 +284,13 @@ export function passesThroughRectInterior(
 	}
 	return enter < leave;
 }
+
+/**
+ * 連続する頂点を結んで線分の列にする
+ *
+ * @param vertices 順につなぐ頂点
+ * @returns 線分の列（頂点が1個以下なら空）
+ */
+export function toSegments(vertices: readonly Point[]): Segment[] {
+	return vertices.slice(1).map((end, index) => ({ start: vertices[index], end }));
+}
