@@ -25,7 +25,7 @@
 
 - Git Bash で `BASE_PATH=/polyline-partition` を渡すと Windows のパスに変換されて失敗する。`MSYS_NO_PATHCONV=1` を付ける。GitHub Actions（Linux）では起きない。
 - Bash のヒアドキュメントで書いたファイルは、バックスラッシュが消えることがある（正規表現の `\\` など）。バックスラッシュを含むコードは Edit ツールで書く。
-- この PC では `python` が使えない（Windows ストアのスタブのみ）。スクリプトは Node で書く。
+- この PC では素の `python` コマンドは使えない（Windows ストアのスタブのみ）。Python が必要なときは `uv run python <スクリプト>` で実行する（uv 0.9.21、Python 3.14.2 で動作確認済み）。Node で足りる処理は Node でよい。
 - `shadcn-svelte init` は対話式で、CSS 上書きの確認を非対話にできない。プリセットは `apply <コード> -y`、部品は `add <名前> -y -o` を使う。使用中のプリセットは `a2r6bw`。
 - `pnpm format` は `.prettierignore` で Markdown、`docs`、`.claude`、`components.json`、`src/lib/components/ui` を除外している。仕様書は整形されない。
 - commitlint は件名の先頭が大文字だと拒否する（`subject-case`）。件名は日本語か小文字で始める。
