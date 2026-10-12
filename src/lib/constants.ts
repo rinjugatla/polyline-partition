@@ -50,3 +50,10 @@ export const MIN_SNAP_STEP = 0.1;
 
 /** グリッドスナップの刻みの上限 */
 export const MAX_SNAP_STEP = 1000;
+
+/**
+ * 面積を持つ多角形に必要な頂点数の下限
+ *
+ * 3点以上でなければ囲まれた領域ができない。
+ */
+export const MIN_POLYGON_VERTICES = 3;
