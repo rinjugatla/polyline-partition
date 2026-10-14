@@ -1,7 +1,11 @@
 import { isSamePoint } from './primitives';
 import type { Point, Segment } from './types';
 
-/** 2つの頂点を結ぶ辺。頂点は ID（`MergedGraph.vertices` の添字）で指す */
+/**
+ * 2つの頂点を結ぶ辺
+ *
+ * 頂点は ID（`MergedGraph.vertices` の添字）で指す。
+ */
 export type Edge = {
 	/** 小さいほうの頂点 ID */
 	readonly from: number;
@@ -40,7 +44,7 @@ function cellKey(cellX: number, cellY: number): string {
 }
 
 /**
- * 親の配列をたどって、グループの根を探す
+ * グループの根を探索
  *
  * 経路の途中の要素は、根に直接つなぎ替えて以降の探索を速くする。
  *
@@ -62,7 +66,7 @@ function findRoot(parents: number[], index: number): number {
 }
 
 /**
- * 2つの要素のグループを1つにまとめる
+ * 2つの要素のグループを併合
  *
  * 小さい添字の根を残す。添字は登録順なので、根はグループで最初に登録された要素になる。
  *
@@ -91,7 +95,7 @@ function indicesAround(cells: ReadonlyMap<string, readonly number[]>, cell: Grid
 }
 
 /**
- * 距離が ε 以内の点を、グリッドハッシュと Union-Find でグループにまとめる
+ * 距離が ε 以内の点を、グリッドハッシュと Union-Find でクラスタ化
  *
  * セル幅を ε にするので、ε 以内の点は同じセルか隣のセルにある。近傍9セルだけを調べればよい。
  * A-B と B-C が ε 以内なら、A-C が ε を超えても3点を1つのグループにする（連鎖）。
@@ -110,7 +114,9 @@ function clusterPoints(points: readonly Point[], epsilon: number): number[] {
 			if (isSamePoint(points[other], point, epsilon)) union(parents, other, index);
 		}
 		const key = cellKey(cell.x, cell.y);
-		cells.set(key, [...(cells.get(key) ?? []), index]);
+		const members = cells.get(key);
+		if (members === undefined) cells.set(key, [index]);
+		else members.push(index);
 	}
 	return parents.map((_, index) => findRoot(parents, index));
 }
@@ -121,7 +127,7 @@ function clusterPoints(points: readonly Point[], epsilon: number): number[] {
  * 小線分の端点のうち距離が ε 以内のものを1つの頂点にまとめ、代表点はグループで最初に登録された点とする。
  * 両端が同じ頂点になった線分は捨て、同じ頂点の組を結ぶ辺は1本にまとめる（向きは区別しない）。
  * 以降は頂点を ID で扱い、座標の比較はしない。辺に使われない頂点は残さず、
- * 頂点 ID は辺に最初に現れた順に振る。
+ * 頂点 ID は辺に最初に現れた順に振る。ε は正の値（設定の下限以上）を前提とし、0 は渡さない。
  *
  * @param segments ノーディング後の小線分
  * @param epsilon 同値判定の許容誤差 ε

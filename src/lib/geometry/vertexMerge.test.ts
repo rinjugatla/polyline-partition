@@ -19,9 +19,11 @@ const AFTER_BOUNDARY = 0.625;
 const FAR = 10;
 /** 三角形の頂点の数 */
 const TRIANGLE_VERTEX_COUNT = 3;
+/** 併合の結果、頂点が3個になる数 */
+const MERGED_VERTEX_COUNT = 3;
 
 /**
- * 線分を作る
+ * 線分を生成
  *
  * @param x1 始点の x
  * @param y1 始点の y
@@ -48,7 +50,7 @@ describe('頂点の併合', () => {
 
 			const graph = mergeVertices([first, second], EXACT_EPSILON);
 
-			expect(graph.vertices).toHaveLength(TRIANGLE_VERTEX_COUNT);
+			expect(graph.vertices).toHaveLength(MERGED_VERTEX_COUNT);
 			expect(graph.edges).toEqual([
 				{ from: 0, to: 1 },
 				{ from: 1, to: 2 }
@@ -143,6 +145,7 @@ describe('頂点の併合', () => {
 			// 下側の3点と上側の3点がそれぞれ連鎖で1つにまとまり、3本の線分は1本の辺になる
 			expect(graph.vertices).toHaveLength(2);
 			expect(graph.vertices[0]).toEqual({ x: 0, y: 0 });
+			expect(graph.edges).toHaveLength(1);
 		});
 
 		it('グリッドのセル境界をまたぐ ε 以内の2点も1つにまとめる', () => {
@@ -151,7 +154,29 @@ describe('頂点の併合', () => {
 				EXACT_EPSILON
 			);
 
-			expect(graph.vertices).toHaveLength(TRIANGLE_VERTEX_COUNT);
+			expect(graph.vertices).toHaveLength(MERGED_VERTEX_COUNT);
+		});
+
+		it('セル境界を斜めにまたぐ ε 以内の2点も1つにまとめる', () => {
+			const graph = mergeVertices(
+				[
+					seg(-FAR, -FAR, BEFORE_BOUNDARY, BEFORE_BOUNDARY),
+					seg(AFTER_BOUNDARY, AFTER_BOUNDARY, FAR, FAR)
+				],
+				EXACT_EPSILON
+			);
+
+			expect(graph.vertices).toHaveLength(MERGED_VERTEX_COUNT);
+		});
+
+		it('併合の結果、異なる2本の線分が同じ頂点の組になるときは辺を1本にまとめる', () => {
+			const graph = mergeVertices(
+				[seg(0, 0, FAR, 0), seg(HALF_EPSILON, 0, FAR, HALF_EPSILON)],
+				EXACT_EPSILON
+			);
+
+			expect(graph.vertices).toHaveLength(2);
+			expect(graph.edges).toEqual([{ from: 0, to: 1 }]);
 		});
 
 		it('負の座標のセル境界をまたぐ2点も1つにまとめる', () => {
@@ -160,7 +185,7 @@ describe('頂点の併合', () => {
 				EXACT_EPSILON
 			);
 
-			expect(graph.vertices).toHaveLength(TRIANGLE_VERTEX_COUNT);
+			expect(graph.vertices).toHaveLength(MERGED_VERTEX_COUNT);
 		});
 	});
 });
