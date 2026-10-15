@@ -81,3 +81,9 @@ export const DEFAULT_COLOR_SEED = 12345;
 
 /** ドキュメントの JSON スキーマのバージョン */
 export const DOCUMENT_SCHEMA_VERSION = 1;
+
+/** アプリ設定を localStorage に保存するときのキー */
+export const SETTINGS_STORAGE_KEY = 'polyline-partition:settings';
+
+/** アプリ設定の保存形式のバージョン */
+export const SETTINGS_SCHEMA_VERSION = 1;
