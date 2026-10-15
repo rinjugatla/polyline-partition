@@ -1,8 +1,59 @@
-# polyline-partition 仕様書
+# polyline-partition
 
-Oct 12, 2026 · @rin
+基礎矩形をポリライン（直線をつないだ折れ線）で区画に分割し、区画をランダムな色で塗り分けて表示する Web アプリです。公開ページ: <https://rinjugatla.github.io/polyline-partition/>
 
-## 1. 概要・目的・スコープ
+以下は、セットアップ方法と仕様書です。
+
+## セットアップ
+
+### 必要なもの
+
+- Node.js（LTS）
+- pnpm（`package.json` の `packageManager` に指定したバージョン。Corepack で有効にできる）
+- Git
+
+### 手順
+
+```bash
+git clone https://github.com/rinjugatla/polyline-partition.git
+cd polyline-partition
+corepack enable          # pnpm が未導入の場合
+pnpm install             # 依存を導入（husky による Git フックも設定される）
+pnpm exec playwright install chromium   # E2E テストを実行する場合のみ
+pnpm dev                 # 開発サーバーを起動
+```
+
+`pnpm dev` の表示に従い、ブラウザで開発サーバーの URL（既定は `http://localhost:5173`）を開きます。
+
+### コマンド
+
+| コマンド | 内容 |
+| --- | --- |
+| `pnpm dev` | 開発サーバーを起動 |
+| `pnpm build` | 静的サイトをビルド |
+| `pnpm preview` | ビルド結果を確認 |
+| `pnpm check` | 型検査（svelte-check） |
+| `pnpm lint` | ESLint による検査 |
+| `pnpm format` | Prettier による整形 |
+| `pnpm test` | 単体テスト（Vitest） |
+| `pnpm test:e2e` | E2E テスト（Playwright） |
+
+### GitHub Pages へのデプロイ
+
+`main` への push で GitHub Actions が動き、検査とテストが通ると公開されます。リポジトリ設定の Pages の Source は「GitHub Actions」にします。手元で本番相当のビルドを確認するときは、`BASE_PATH` を付けます。
+
+```bash
+BASE_PATH=/polyline-partition pnpm build   # PowerShell: $env:BASE_PATH='/polyline-partition'; pnpm build
+pnpm preview
+```
+
+開発規約は `AGENTS.md` にまとめています。
+
+---
+
+## 仕様書
+
+### 1. 概要・目的・スコープ
 
 polyline-partition は、任意サイズの矩形（基礎矩形）を折れ線（ポリライン）で区画に分割し、区画ごとにランダムな色を付けて表示する Web アプリである。
 
@@ -24,7 +75,7 @@ polyline-partition は、任意サイズの矩形（基礎矩形）を折れ線�
 - UI の多言語対応（日本語のみ）
 - 数百本を超える大規模入力向けの最適化
 
-## 2. 用語定義
+### 2. 用語定義
 
 座標系は右手座標系（X 軸右向き、Y 軸上向き）で、基礎矩形は原点 (0, 0) から (W, H) までの領域とする。
 
@@ -50,7 +101,7 @@ polyline-partition は、任意サイズの矩形（基礎矩形）を折れ線�
 | Union-Find | 要素をグループにまとめる操作を高速に行うデータ構造。頂点の併合に使う |
 | グリッドハッシュ | 平面を格子状に区切り、近くの格子にある点だけを調べて探索を速くする方法 |
 
-## 3. 機能要件
+### 3. 機能要件
 
 機能は次の12項目で、ポリラインの検証ルールは第4章、画面操作は第5章、設定の保存は第6章に詳細を置く。
 
@@ -69,7 +120,7 @@ polyline-partition は、任意サイズの矩形（基礎矩形）を折れ線�
 | FR-11 | 保存・出力 | JSON の保存と読込、SVG の出力。ファイル操作はブラウザのダウンロードとファイル選択で行う |
 | FR-12 | アプリ設定 | サイドパネルの「設定」から、ε とスナップ（ON / OFF、刻み）を変更できる。値は localStorage に保存し、次回の起動でも保持する |
 
-## 4. バリデーション規則
+### 4. バリデーション規則
 
 ポリラインは次の6つの規則をすべて満たすときだけ有効で、他のポリラインとの関係は規則の対象外とする。分割に寄与しないポリラインは不正として受け付けないので、面抽出の前に不要なポリラインを選別する後処理は要らない。
 
@@ -95,7 +146,7 @@ polyline-partition は、任意サイズの矩形（基礎矩形）を折れ線�
 | ε の変更 | V-02, V-03, V-04, V-06 | 矩形サイズの変更と同じく、無効になったポリラインを赤く表示し、区画分割を実行できなくする |
 | JSON の読込 | V-01〜V-06 | 読込を中止し、違反内容を表示する |
 
-## 5. 画面構成・操作仕様
+### 5. 画面構成・操作仕様
 
 画面は、左側のサイドパネルと右側の広いキャンバスの2領域で構成する単一ページとする（デスクトップのマウス操作が対象）。
 
@@ -147,7 +198,7 @@ Shift による軸拘束は、基準の頂点とカーソル位置の差を見�
 - 保存・出力: `FilePanel.svelte`
 - 設定: `SettingsPanel.svelte`
 
-## 6. データモデル・保存形式
+### 6. データモデル・保存形式
 
 アプリの状態は、編集対象の「ドキュメント」、計算で得られる「分割結果」、ブラウザに保存する「アプリ設定」の3つに分ける。ドキュメントは JSON ファイルとして保存でき、分割結果は保存せず再計算する。アプリ設定は localStorage に保存する。
 
@@ -250,7 +301,7 @@ SVG 出力の規則は次のとおり。
 - 描画順は、矩形の枠、区画の `<polygon>`（分割済みのときだけ）、ポリラインの `<polyline>` とする
 - ファイル名は `polyline-partition.svg` と `polyline-partition.json` とする
 
-## 7. 面抽出アルゴリズム
+### 7. 面抽出アルゴリズム
 
 基礎矩形の4辺とポリラインの線分を1つの平面グラフにまとめ、ノーディング、頂点併合、半辺構造、面列挙の順に処理して、内部の面を区画として数える。入力は有効なポリライン群と基礎矩形、出力は `PartitionResult` である。
 
@@ -307,7 +358,7 @@ SVG 出力の規則は次のとおり。
 - ノーディングは線分数 n に対して O(n²) で、数百本、数千線分までを想定する。
 - 共線や接触の判定式の細部は、実装時に境界条件のテストで固める。
 
-## 8. テスト方針
+### 8. テスト方針
 
 テストは、ロジックを Vitest の単体テストで、画面を Playwright の E2E テストで確かめる2層とし、どちらも正常系、異常系、境界条件に分け、テスト名は日本語で書く。
 
@@ -323,7 +374,7 @@ describe('頂点の併合', () => {
 });
 ```
 
-### 単体テスト（Vitest）
+#### 単体テスト（Vitest）
 
 テストファイルは対象と同じディレクトリに `*.test.ts` として置く。対象は UI に依存しない `src/lib` 配下のロジックで、`src/lib/geometry` の行カバレッジ 90% 以上を目標にする。
 
@@ -343,7 +394,7 @@ describe('頂点の併合', () => {
 
 これに加えて、プロパティテスト（ランダムな入力に対して、常に成り立つべき性質を確かめるテスト）を行う。始点と終点を矩形の外側に置き、途中の頂点を乱数で決め、自己交差するものや矩形の内部を通らないものは棄却して生成する。確かめる性質は、区画の面積の総和と W × H の差が ε × 2(W + H) 以内であること、オイラーの検算が成立すること、一般位置のとき `1 + 弦数 + 交点数` が区画数に一致することの3つである。ライブラリは fast-check を使う。
 
-### E2E テスト（Playwright）
+#### E2E テスト（Playwright）
 
 対象ブラウザは Chromium のみ、ビューポートはデスクトップサイズ（1280 × 800）とする。`webServer` でビルド済みのアプリを起動して実行する。ボタンは role と名前で、キャンバス、統計、区画は `data-testid` で特定する。マウス操作の座標は、全体表示を前提にした「論理座標から画面座標への変換」ヘルパーを `e2e/` に用意して指定する。
 
@@ -369,7 +420,7 @@ describe('頂点の併合', () => {
 | E2E-18 | 境界条件 | 幅と高さは 10 と 10000 を受け付け、範囲外の値は拒否する |
 | E2E-19 | 境界条件 | 境界に沿う部分と内部を通る部分の両方を持つ線は確定でき、区画数が期待どおりになる |
 
-## 9. 技術スタック・開発環境・デプロイ
+### 9. 技術スタック・開発環境・デプロイ
 
 アプリは SvelteKit 3、Svelte 5、TypeScript の静的サイトとして GitHub Pages に配信し、開発はローカルで行い、実装は Claude Code で進める。リポジトリ名は `polyline-partition` とする。
 
@@ -413,7 +464,7 @@ polyline-partition/
 │  ├─ skills/                   # commit、write-tests（playwright-cli は CLI で導入）
 │  └─ agents/                   # code-reviewer、spec-checker
 ├─ .husky/                      # Git フック（pre-commit、commit-msg、pre-push）
-├─ docs/spec.md                 # この仕様書（Markdown）
+├─ README.md                    # セットアップと仕様書
 ├─ src/
 │  ├─ app.css                   # Tailwind CSS
 │  ├─ lib/
@@ -476,7 +527,7 @@ Claude Code での実装は、次の順に進めることを推奨する。
 
 AI ツールは Claude Code 用の設定をリポジトリに含める。Svelte 公式 MCP（Svelte のドキュメント検索と、コードの誤りを自動検出する `svelte-autofixer`）を `.mcp.json` でローカル起動し、スキルは `commit`、`write-tests`、Playwright CLI の 3 つ、エージェントは `code-reviewer` と `spec-checker`（どちらも読み取り専用）を用いる。小規模なシステムのため、Svelte と TypeScript の専用エージェント・スキルは作らず、MCP、`AGENTS.md`、`svelte-check`、ESLint で足りる。詳細は `AGENTS.md` の 8 章を正とする。
 
-## 10. 決定事項・将来拡張
+### 10. 決定事項・将来拡張
 
 これまでの検討で決めた事項は次の表のとおりで、「推奨案を採用」は明示的な指定がなく、推奨案のまま仕様に取り込んだものである。
 
