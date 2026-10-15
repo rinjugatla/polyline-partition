@@ -229,7 +229,7 @@ function toRegions(faces: readonly Face[], epsilon: number): PartitionRegion[] {
  * @param request 分割の入力
  * @returns 違反のあるポリライン（なければ空）
  */
-function findInvalidPolylines(request: PartitionRequest): InvalidPolyline[] {
+export function findInvalidPolylines(request: PartitionRequest): InvalidPolyline[] {
 	const { polylines, rect, epsilon } = request;
 	return polylines.flatMap((polyline) => {
 		const validation = validatePolyline({ vertices: polyline.vertices, rect, epsilon });

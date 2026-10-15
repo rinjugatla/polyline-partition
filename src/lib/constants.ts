@@ -71,3 +71,13 @@ export const MIN_VERTEX_COUNT = 2;
  * 靴ひも公式の外積の総和から重心を求めるときに現れる。
  */
 export const CENTROID_AREA_FACTOR = 6;
+
+/**
+ * 区画の色を決めるシード値の既定値
+ *
+ * 任意の整数でよい。新規ドキュメントの色を毎回同じにして、挙動を再現しやすくする。
+ */
+export const DEFAULT_COLOR_SEED = 12345;
+
+/** ドキュメントの JSON スキーマのバージョン */
+export const DOCUMENT_SCHEMA_VERSION = 1;
