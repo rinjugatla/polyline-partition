@@ -87,3 +87,38 @@ export const SETTINGS_STORAGE_KEY = 'polyline-partition:settings';
 
 /** アプリ設定の保存形式のバージョン */
 export const SETTINGS_SCHEMA_VERSION = 1;
+
+/**
+ * 全体表示で、基礎矩形の周囲に設ける余白の割合
+ *
+ * 画面の短いほうの辺に対する割合。頂点ハンドルや矩形の外側の始終端が見える広さにした。
+ */
+export const VIEW_MARGIN_RATIO = 0.1;
+
+/** ズーム倍率の下限（全体表示の倍率に対する割合） */
+export const MIN_ZOOM_RATIO = 0.1;
+
+/** ズーム倍率の上限（全体表示の倍率に対する割合） */
+export const MAX_ZOOM_RATIO = 100;
+
+/** ホイール1目盛りあたりのズームの係数 */
+export const ZOOM_STEP = 1.1;
+
+/** 頂点ハンドルの半径（画面のピクセル） */
+export const HANDLE_RADIUS = 6;
+
+/**
+ * 区画の色相をずらす角度（黄金角）
+ *
+ * 隣り合う番号の色相が離れ、区画数が増えても色が重なりにくい。
+ */
+export const GOLDEN_ANGLE = 137.508;
+
+/** 色相の一周（度） */
+export const HUE_CYCLE = 360;
+
+/** 区画の彩度の範囲（%） */
+export const SATURATION_RANGE = { min: 60, max: 75 } as const;
+
+/** 区画の明度の範囲（%） */
+export const LIGHTNESS_RANGE = { min: 55, max: 70 } as const;
