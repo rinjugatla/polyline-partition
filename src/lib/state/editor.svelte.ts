@@ -1,0 +1,349 @@
+import { partition, type PartitionResult } from '../geometry/partition';
+import { resolveInputPoint } from '../geometry/snap';
+import type { Point, RectSize } from '../geometry/types';
+import { DEFAULT_SETTINGS, type AppSettings } from '../settings/settings';
+import { createDocument, type DocumentState } from './document';
+import {
+	checkAddVertex,
+	clearPolylines,
+	finishPolyline,
+	findInvalid,
+	moveVertex,
+	removePolyline,
+	resizeRect
+} from './documentOps';
+import { canRedo, canUndo, commit, createHistory, redo, undo, type History } from './history';
+
+/** 操作モード */
+export type EditorMode = 'select' | 'draw';
+
+/** 頂点のドラッグ中の状態 */
+type DragState = {
+	/** 動かしているポリラインの ID */
+	readonly polylineId: string;
+	/** 動かしている頂点の添字 */
+	readonly index: number;
+	/** 違反がなかった直近の位置 */
+	readonly point: Point;
+};
+
+/** ドラッグ中に検査する規則（V-06 は確定時に検査する） */
+const DRAG_RULES = ['V-02', 'V-03', 'V-04', 'V-05'] as const;
+
+/**
+ * 編集の状態
+ *
+ * ドキュメント、Undo / Redo の履歴、操作モード、選択、描画中の頂点、分割結果を持つ。
+ * 画面（コンポーネント）は表示と入力の橋渡しに徹し、判断はこのクラスの関数に任せる。
+ */
+export class EditorState {
+	/** ドキュメントの履歴 */
+	#history = $state.raw<History<DocumentState>>(createHistory(createDocument()));
+
+	/** アプリ設定 */
+	settings = $state.raw<AppSettings>(DEFAULT_SETTINGS);
+
+	/** 操作モード */
+	mode = $state<EditorMode>('select');
+
+	/** 選択中のポリラインの ID */
+	selectedId = $state<string | null>(null);
+
+	/** 描画中の頂点 */
+	draft = $state.raw<readonly Point[]>([]);
+
+	/** 利用者に見せる直近のエラー */
+	message = $state<string | null>(null);
+
+	/** 分割結果。未分割なら null */
+	result = $state.raw<PartitionResult | null>(null);
+
+	/** 頂点のドラッグ中の状態 */
+	#drag = $state.raw<DragState | null>(null);
+
+	/** 履歴の現在のドキュメント（ドラッグ中の位置は含まない） */
+	committed = $derived(this.#history.present);
+
+	/** 表示するドキュメント（ドラッグ中の位置を反映する） */
+	document = $derived.by(() => {
+		const drag = this.#drag;
+		if (drag === null) return this.committed;
+		return {
+			...this.committed,
+			polylines: this.committed.polylines.map((polyline) =>
+				polyline.id === drag.polylineId
+					? {
+							...polyline,
+							vertices: polyline.vertices.map((vertex, i) =>
+								i === drag.index ? drag.point : vertex
+							)
+						}
+					: polyline
+			)
+		};
+	});
+
+	/** 無効なポリラインの ID と理由 */
+	invalidPolylines = $derived(findInvalid(this.document, this.settings.epsilon));
+
+	/** 戻せる操作があるか */
+	canUndo = $derived(canUndo(this.#history));
+
+	/** 進める操作があるか */
+	canRedo = $derived(canRedo(this.#history));
+
+	/** 区画分割を実行できるか */
+	canPartition = $derived(this.invalidPolylines.length === 0);
+
+	/**
+	 * ドキュメントを記録し、分割結果を破棄
+	 *
+	 * @param next 新しいドキュメント
+	 */
+	#record(next: DocumentState): void {
+		this.#history = commit(this.#history, next);
+		this.result = null;
+		this.message = null;
+	}
+
+	/**
+	 * 操作モードを切り替える
+	 *
+	 * @param mode 新しいモード
+	 */
+	setMode(mode: EditorMode): void {
+		this.mode = mode;
+		this.draft = [];
+		this.message = null;
+	}
+
+	/**
+	 * カーソル位置を、スナップと軸拘束で補正
+	 *
+	 * @param point カーソル位置の論理座標
+	 * @param isShiftPressed Shift が押されているか
+	 * @param axisBase 軸拘束の基準の頂点
+	 * @returns 補正後の座標
+	 */
+	resolvePoint(point: Point, isShiftPressed: boolean, axisBase: Point | null): Point {
+		return resolveInputPoint({
+			point,
+			snap: this.settings.snap,
+			axisBase,
+			isAxisConstrained: isShiftPressed
+		});
+	}
+
+	/**
+	 * 描画中の頂点を追加
+	 *
+	 * 違反する頂点は追加せず、理由を `message` に入れる。
+	 *
+	 * @param point 補正済みの座標
+	 * @returns 追加できたか
+	 */
+	addDraftVertex(point: Point): boolean {
+		const failure = checkAddVertex(this.draft, point, {
+			rect: this.document.rect,
+			epsilon: this.settings.epsilon
+		});
+		if (failure !== null) {
+			this.message = failure.messages.join('、');
+			return false;
+		}
+		this.draft = [...this.draft, point];
+		this.message = null;
+		return true;
+	}
+
+	/** 描画を確定。違反があれば確定せず、理由を `message` に入れて描画を続ける */
+	finishDraft(): void {
+		const result = finishPolyline(this.committed, this.draft, this.settings.epsilon);
+		if (!result.ok) {
+			this.message = result.messages.join('、');
+			return;
+		}
+		this.#record(result.document);
+		this.selectedId = result.document.polylines.at(-1)?.id ?? null;
+		this.draft = [];
+	}
+
+	/** 描画を中止し、描画中のポリラインを破棄 */
+	cancelDraft(): void {
+		this.draft = [];
+		this.message = null;
+	}
+
+	/**
+	 * ポリラインを選択
+	 *
+	 * @param id 選択するポリラインの ID。選択を外すときは null
+	 */
+	select(id: string | null): void {
+		this.selectedId = id;
+	}
+
+	/**
+	 * 頂点のドラッグを始める
+	 *
+	 * @param polylineId 動かすポリラインの ID
+	 * @param index 動かす頂点の添字
+	 */
+	beginDrag(polylineId: string, index: number): void {
+		const vertex = this.committed.polylines.find((p) => p.id === polylineId)?.vertices[index];
+		if (vertex === undefined) return;
+		this.#drag = { polylineId, index, point: vertex };
+		this.selectedId = polylineId;
+	}
+
+	/**
+	 * ドラッグ中の軸拘束の基準
+	 *
+	 * 前の頂点を基準にし、先頭の頂点では次の頂点を基準にする。
+	 *
+	 * @returns 基準の頂点。ドラッグ中でなければ null
+	 */
+	dragAxisBase(): Point | null {
+		const drag = this.#drag;
+		if (drag === null) return null;
+		const vertices = this.committed.polylines.find((p) => p.id === drag.polylineId)?.vertices;
+		return vertices?.[drag.index === 0 ? 1 : drag.index - 1] ?? null;
+	}
+
+	/**
+	 * ドラッグ中の頂点を動かす
+	 *
+	 * 違反する位置には動かさず、直近の有効な位置にとどめて理由を `message` に入れる。
+	 *
+	 * @param point 補正済みの座標
+	 */
+	dragTo(point: Point): void {
+		const drag = this.#drag;
+		if (drag === null) return;
+		const result = moveVertex(this.committed, {
+			...drag,
+			point,
+			epsilon: this.settings.epsilon,
+			rules: DRAG_RULES
+		});
+		if (!result.ok) {
+			this.message = result.messages.join('、');
+			return;
+		}
+		this.#drag = { ...drag, point };
+		this.message = null;
+	}
+
+	/** ドラッグを終える。全規則を満たせば確定し、違反なら元の位置に戻す */
+	endDrag(): void {
+		const drag = this.#drag;
+		this.#drag = null;
+		if (drag === null) return;
+		const result = moveVertex(this.committed, { ...drag, epsilon: this.settings.epsilon });
+		if (!result.ok) {
+			this.message = result.messages.join('、');
+			return;
+		}
+		this.#record(result.document);
+	}
+
+	/**
+	 * ポリラインを削除
+	 *
+	 * @param id 削除するポリラインの ID
+	 */
+	deletePolyline(id: string): void {
+		this.#record(removePolyline(this.committed, id));
+		if (this.selectedId === id) this.selectedId = null;
+	}
+
+	/** 選択中のポリラインを削除 */
+	deleteSelected(): void {
+		if (this.selectedId !== null) this.deletePolyline(this.selectedId);
+	}
+
+	/** すべてのポリラインを削除 */
+	clearAll(): void {
+		this.#record(clearPolylines(this.committed));
+		this.selectedId = null;
+	}
+
+	/**
+	 * 基礎矩形の大きさを変更
+	 *
+	 * @param rect 新しい大きさ
+	 * @returns 変更できたか。範囲外なら変更せず、理由を `message` に入れる
+	 */
+	setRect(rect: RectSize): boolean {
+		const result = resizeRect(this.committed, rect);
+		if (!result.ok) {
+			this.message = result.messages.join('、');
+			return false;
+		}
+		this.#record(result.document);
+		return true;
+	}
+
+	/** 1つ前の状態に戻す */
+	undo(): void {
+		this.#history = undo(this.#history);
+		this.#afterHistoryMove();
+	}
+
+	/** 1つ先の状態に進める */
+	redo(): void {
+		this.#history = redo(this.#history);
+		this.#afterHistoryMove();
+	}
+
+	/** Undo / Redo の後始末。分割結果と、存在しなくなった選択を破棄 */
+	#afterHistoryMove(): void {
+		this.result = null;
+		this.message = null;
+		this.draft = [];
+		const ids = this.committed.polylines.map((polyline) => polyline.id);
+		if (this.selectedId !== null && !ids.includes(this.selectedId)) this.selectedId = null;
+	}
+
+	/**
+	 * アプリ設定を変更
+	 *
+	 * ε が変わると無効なポリラインが変わるので、分割結果は破棄する。
+	 *
+	 * @param settings 検証済みの新しい設定
+	 */
+	updateSettings(settings: AppSettings): void {
+		if (settings.epsilon !== this.settings.epsilon) this.result = null;
+		this.settings = settings;
+	}
+
+	/**
+	 * ドキュメントを読み込む
+	 *
+	 * 履歴は新しく始める。読込直後は未分割になる。
+	 *
+	 * @param document 検証済みのドキュメント
+	 */
+	loadDocument(document: DocumentState): void {
+		this.#history = createHistory(document);
+		this.result = null;
+		this.message = null;
+		this.selectedId = null;
+		this.draft = [];
+	}
+
+	/** 区画分割を実行。無効なポリラインがあれば実行せず、理由を `message` に入れる */
+	runPartition(): void {
+		const outcome = partition({
+			polylines: this.committed.polylines,
+			rect: this.committed.rect,
+			epsilon: this.settings.epsilon
+		});
+		if (!outcome.ok) {
+			this.message = '無効なポリラインがあるため、区画分割を実行できません';
+			return;
+		}
+		this.result = outcome.result;
+		this.message = null;
+	}
+}
