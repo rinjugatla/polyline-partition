@@ -389,6 +389,12 @@ describe('頂点の併合', () => {
 | 外部ライブラリ | 幾何、面抽出、色付け、保存はすべて自前実装。fast-check はテスト専用（プロパティテスト用） |
 | Git フック | husky、lint-staged、commitlint。割り当ては AGENTS.md の 3.3 に定める |
 
+追加してよい依存は次のとおりで、これ以外はユーザーに相談する（AGENTS.md の 4.1）。バージョンは固定せず、導入時点の安定版を使う。
+
+- 実行時: なし（幾何、面抽出、色付け、保存はすべて自前実装）
+- UI: shadcn-svelte に伴う Tailwind CSS、Bits UI、`cn`（shadcn 公式のクラス結合ライブラリ）、`tailwind-variants` など、CLI が追加するもの
+- 開発時: `@sveltejs/adapter-static`、Vitest、Playwright、ESLint 一式、Prettier 一式、svelte-check、fast-check、husky、lint-staged、`@commitlint/cli`、`@commitlint/config-conventional`
+
 `package.json` のスクリプトは次の名前にそろえる。
 
 - `pnpm dev`、`pnpm build`、`pnpm preview`

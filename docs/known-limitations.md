@@ -98,3 +98,18 @@ polyline-partition の既知の制約と課題を、分野ごとに章を分け�
 
 - このシステムは手動操作が前提で、スナップが既定で ON（刻み 10）なので、座標は粗い格子上に載ることが多い。
 - 極端な配置に備えた厳密な幾何計算（有理数や適応的精度）は、YAGNI（必要になるまで作らない）に反するため入れない。
+
+## 開発環境の注意点
+
+この PC（Windows、Git Bash）と各ツールで踏んだ落とし穴をまとめる。
+
+- Git Bash で `BASE_PATH=/polyline-partition` を渡すと Windows のパスに変換されて失敗する。`MSYS_NO_PATHCONV=1` を付ける。GitHub Actions（Linux）では起きない。
+- Bash のコマンド内にバッククォートやバックスラッシュを含む長い文字列を書くと、コマンド置換や文字の欠落が起きる。コードや文書は Edit ツールか Write ツールで書く。
+- 素の `python` コマンドは使えない（Windows ストアのスタブのみ）。必要なときは `uv run python <スクリプト>` を使うか、Node で書く。
+- `shadcn-svelte init` は対話式で、CSS 上書きの確認を非対話にできない。プリセットは `apply <コード> -y`、部品は `add <名前> -y -o` を使う。使用中のプリセットは `a2r6bw`。
+- `pnpm format` は `.prettierignore` で Markdown、`docs`、`.claude`、`components.json`、`src/lib/components/ui` を除外している。一方、`.serena/project.yml` は書き換わるので、整形のあとに `git checkout .serena/project.yml` で戻す。
+- commitlint は件名の先頭が大文字だと拒否する（`subject-case`）。件名は日本語か小文字で始める。
+- TypeScript は 6 系を使う（7 系は svelte-check が未対応）。
+- ESLint の jsdoc ルールは、`*.test.ts`、`*.spec.ts`、`playwright.config.ts`、`src/lib/utils.ts`、`src/app.d.ts` を対象外にしている。ドキュメントコメントの文体（句点、体言止め）は機械的に強制できないので、`code-reviewer` で確認する。
+- Svelte ファイルでは `$lib` が使えない。import は `#lib/...` に拡張子付き（TS は `.js`、shadcn の部品は `/index.js`、コンポーネントは `.svelte`）で書く。
+- CI のアクション（`checkout@v4` など）は Node.js 20 の非推奨警告が出ている。動作に影響はない。必要になったらバージョンを上げる。
