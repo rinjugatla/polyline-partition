@@ -1,7 +1,15 @@
+import { assignColors } from '../color/colors';
+import { MAX_COLOR_SEED } from '../constants';
 import { partition, type PartitionResult } from '../geometry/partition';
 import { resolveInputPoint } from '../geometry/snap';
 import type { Point, RectSize } from '../geometry/types';
-import { DEFAULT_SETTINGS, type AppSettings } from '../settings/settings';
+import {
+	DEFAULT_SETTINGS,
+	loadSettings,
+	saveSettings,
+	type AppSettings,
+	type SettingsStorage
+} from '../settings/settings';
 import { createDocument, type DocumentState } from './document';
 import {
 	checkAddVertex,
@@ -317,6 +325,34 @@ export class EditorState {
 		this.settings = settings;
 	}
 
+	/** 設定の保存先。使えないときは null */
+	#storage: SettingsStorage | null = null;
+
+	/** 設定を保存先に保存できているか（できないときは設定欄に表示する） */
+	isSettingsPersisted = $state(true);
+
+	/**
+	 * 設定の保存先をつなぎ、保存済みの設定を読み込む
+	 *
+	 * @param storage 保存先。使えないときは null
+	 */
+	attachStorage(storage: SettingsStorage | null): void {
+		const loaded = loadSettings(storage);
+		this.#storage = storage;
+		this.updateSettings(loaded.settings);
+		this.isSettingsPersisted = loaded.isStorageAvailable;
+	}
+
+	/**
+	 * 設定を変更して保存
+	 *
+	 * @param settings 検証済みの新しい設定
+	 */
+	changeSettings(settings: AppSettings): void {
+		this.updateSettings(settings);
+		this.isSettingsPersisted = saveSettings(this.#storage, settings);
+	}
+
 	/**
 	 * ドキュメントを読み込む
 	 *
@@ -330,6 +366,18 @@ export class EditorState {
 		this.message = null;
 		this.selectedId = null;
 		this.draft = [];
+	}
+
+	/** 区画の色（区画の番号順）。未分割なら空 */
+	colors = $derived(
+		this.result === null ? [] : assignColors(this.result.regions.length, this.committed.colorSeed)
+	);
+
+	/** 色のシードを更新して、色を再抽選。履歴には残さず、区画数は変わらない */
+	rerollColors(): void {
+		const present = this.#history.present;
+		const colorSeed = Math.floor(Math.random() * MAX_COLOR_SEED);
+		this.#history = { ...this.#history, present: { ...present, colorSeed } };
 	}
 
 	/** 区画分割を実行。無効なポリラインがあれば実行せず、理由を `message` に入れる */

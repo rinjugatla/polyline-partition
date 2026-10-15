@@ -122,3 +122,9 @@ export const SATURATION_RANGE = { min: 60, max: 75 } as const;
 
 /** 区画の明度の範囲（%） */
 export const LIGHTNESS_RANGE = { min: 55, max: 70 } as const;
+
+/** 色のシード値の上限（32 ビット符号なし整数の範囲） */
+export const MAX_COLOR_SEED = 4294967295;
+
+/** 選択中のポリラインの線の太さ（画面のピクセル） */
+export const SELECTED_STROKE_WIDTH = 4;
