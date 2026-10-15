@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_EPSILON } from '../constants';
+import { DEFAULT_EPSILON, SETTINGS_STORAGE_KEY } from '../constants';
 import type { Point } from '../geometry/types';
 import { DEFAULT_SETTINGS } from '../settings/settings';
 import { EditorState } from './editor.svelte';
@@ -233,6 +233,124 @@ describe('編集の状態', () => {
 
 			expect(editor.canUndo).toBe(false);
 			expect(editor.result).toBeNull();
+		});
+	});
+});
+
+/** 設定の保存先として使う、メモリ上の疑似ストレージ */
+function memoryStorage(initial: Record<string, string> = {}) {
+	const data = new Map(Object.entries(initial));
+	return {
+		data,
+		getItem: (key: string) => data.get(key) ?? null,
+		setItem: (key: string, value: string) => void data.set(key, value)
+	};
+}
+
+/** 例外を投げる保存先 */
+const BROKEN_STORAGE = {
+	getItem: () => {
+		throw new Error('使えない');
+	},
+	setItem: () => {
+		throw new Error('使えない');
+	}
+};
+
+describe('編集の状態: 保存・出力・設定', () => {
+	describe('正常系', () => {
+		it('JSON に保存して読み込むと、同じドキュメントで未分割になる', () => {
+			const editor = editorWithHorizontal();
+			const json = editor.toJson();
+			const other = new EditorState();
+
+			other.loadJsonText(json);
+
+			expect(other.document).toEqual(editor.document);
+			expect(other.result).toBeNull();
+		});
+
+		it('分割後の SVG に区画数と同じ数の polygon が入る', () => {
+			const editor = editorWithHorizontal();
+			editor.runPartition();
+
+			const svg = editor.toSvg();
+
+			expect(svg.split('<polygon').length - 1).toBe(TWO_REGIONS);
+		});
+
+		it('色を再抽選すると、区画数を保ったまま色のシードが変わり、履歴には残らない', () => {
+			const editor = editorWithHorizontal();
+			editor.runPartition();
+			const before = editor.document.colorSeed;
+			const undoable = editor.canUndo;
+
+			editor.rerollColors();
+
+			expect(editor.document.colorSeed).not.toBe(before);
+			expect(editor.colors).toHaveLength(TWO_REGIONS);
+			expect(editor.canUndo).toBe(undoable);
+		});
+
+		it('保存先をつなぐと、保存済みの設定を読み込む', () => {
+			const saved = { ...DEFAULT_SETTINGS, epsilon: 0.5 };
+			const storage = memoryStorage();
+			const first = new EditorState();
+			first.attachStorage(storage);
+			first.changeSettings(saved);
+			const second = new EditorState();
+
+			second.attachStorage(storage);
+
+			expect(second.settings.epsilon).toBe(saved.epsilon);
+			expect(storage.data.has(SETTINGS_STORAGE_KEY)).toBe(true);
+		});
+	});
+
+	describe('異常系', () => {
+		it('不正な JSON は読み込まず、理由を表示してドキュメントを保つ', () => {
+			const editor = editorWithHorizontal();
+			const before = editor.document;
+
+			editor.loadJsonText('{');
+
+			expect(editor.message).not.toBeNull();
+			expect(editor.document).toBe(before);
+		});
+
+		it('保存先が使えないと、既定値で動作し保存できない印が付く', () => {
+			const editor = new EditorState();
+
+			editor.attachStorage(BROKEN_STORAGE);
+
+			expect(editor.settings).toEqual(DEFAULT_SETTINGS);
+			expect(editor.isSettingsPersisted).toBe(false);
+		});
+
+		it('保存先が null のとき、設定を変更しても保存できない印が付く', () => {
+			const editor = new EditorState();
+			editor.attachStorage(null);
+
+			editor.changeSettings({ ...DEFAULT_SETTINGS, epsilon: 0.5 });
+
+			expect(editor.isSettingsPersisted).toBe(false);
+		});
+	});
+
+	describe('境界条件', () => {
+		it('未分割の SVG には polygon が入らない', () => {
+			const editor = editorWithHorizontal();
+
+			expect(editor.toSvg()).not.toContain('<polygon');
+		});
+
+		it('保存データがない保存先では既定値で保存できる印が付く', () => {
+			const editor = new EditorState();
+
+			editor.attachStorage(memoryStorage());
+
+			expect(editor.settings).toEqual(DEFAULT_SETTINGS);
+			expect(editor.isSettingsPersisted).toBe(true);
 		});
 	});
 });

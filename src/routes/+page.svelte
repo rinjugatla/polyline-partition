@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Canvas from '#lib/components/Canvas.svelte';
+	import FilePanel from '#lib/components/FilePanel.svelte';
 	import PartitionPanel from '#lib/components/PartitionPanel.svelte';
 	import PolylineList from '#lib/components/PolylineList.svelte';
 	import RectForm from '#lib/components/RectForm.svelte';
@@ -48,6 +49,8 @@
 		<PartitionPanel {editor} />
 		<Separator />
 		<StatsPanel {editor} />
+		<Separator />
+		<FilePanel {editor} />
 		<Separator />
 		<SettingsPanel {editor} />
 	</aside>

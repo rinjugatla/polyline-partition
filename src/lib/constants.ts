@@ -128,3 +128,18 @@ export const MAX_COLOR_SEED = 4294967295;
 
 /** 選択中のポリラインの線の太さ（画面のピクセル） */
 export const SELECTED_STROKE_WIDTH = 4;
+
+/** SVG 出力で、基礎矩形の枠に使う線の色 */
+export const SVG_FRAME_STROKE = '#000000';
+
+/** SVG 出力で、ポリラインに使う線の色。区画の塗りと区別できる濃い色にする */
+export const SVG_POLYLINE_STROKE = '#1f2937';
+
+/** SVG 出力の線の太さ（論理座標の単位）。基礎矩形の既定の大きさ（1000）でも見える細さにする */
+export const SVG_STROKE_WIDTH = 2;
+
+/** JSON の保存ファイル名 */
+export const JSON_FILE_NAME = 'polyline-partition.json';
+
+/** SVG の出力ファイル名 */
+export const SVG_FILE_NAME = 'polyline-partition.svg';

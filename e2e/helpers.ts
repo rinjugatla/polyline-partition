@@ -4,13 +4,15 @@ import type { Page } from '@playwright/test';
 const DEFAULT_SIDE = 1000;
 
 /** 論理座標の点 */
-export type LogicalPoint = { /**
- *
- */
-x: number; /**
- *
- */
-y: number };
+export type LogicalPoint = {
+	/**
+	 *
+	 */
+	x: number; /**
+	 *
+	 */
+	y: number;
+};
 
 /**
  * 論理座標を画面座標に変換

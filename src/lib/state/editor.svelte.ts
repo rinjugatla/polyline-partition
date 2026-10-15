@@ -3,6 +3,8 @@ import { MAX_COLOR_SEED } from '../constants';
 import { partition, type PartitionResult } from '../geometry/partition';
 import { resolveInputPoint } from '../geometry/snap';
 import type { Point, RectSize } from '../geometry/types';
+import { parseDocument, serializeDocument } from '../io/json';
+import { exportSvg } from '../io/svg';
 import {
 	DEFAULT_SETTINGS,
 	loadSettings,
@@ -366,6 +368,48 @@ export class EditorState {
 		this.message = null;
 		this.selectedId = null;
 		this.draft = [];
+	}
+
+	/**
+	 * JSON 文字列を読み込む
+	 *
+	 * 現在の ε で検証し、違反があれば読込を中止して理由を `message` に入れる。
+	 *
+	 * @param text JSON 文字列
+	 */
+	loadJsonText(text: string): void {
+		const loaded = parseDocument(text, this.settings.epsilon);
+		if (!loaded.ok) {
+			this.message = loaded.messages.join('、');
+			return;
+		}
+		this.loadDocument(loaded.document);
+	}
+
+	/**
+	 * 現在のドキュメントを JSON 文字列にする
+	 *
+	 * @returns 保存用の JSON 文字列
+	 */
+	toJson(): string {
+		return serializeDocument(this.committed);
+	}
+
+	/**
+	 * 現在の状態を SVG 文字列にする
+	 *
+	 * @returns SVG 文書。未分割なら区画を含まない
+	 */
+	toSvg(): string {
+		const regions = (this.result?.regions ?? []).map((region, index) => ({
+			polygon: region.polygon,
+			color: this.colors[index]
+		}));
+		return exportSvg({
+			rect: this.committed.rect,
+			polylines: this.committed.polylines,
+			regions
+		});
 	}
 
 	/** 区画の色（区画の番号順）。未分割なら空 */
