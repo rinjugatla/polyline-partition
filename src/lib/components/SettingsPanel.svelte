@@ -3,7 +3,13 @@
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { Switch } from '#lib/components/ui/switch/index.js';
 	import type { EditorState } from '#lib/state/editor.svelte.js';
-	import { validateSettings, type AppSettings } from '#lib/settings/settings.js';
+	import {
+		readNumericSetting,
+		validateSettings,
+		withNumericSetting,
+		type AppSettings,
+		type NumericSettingField
+	} from '#lib/settings/settings.js';
 
 	/** props */
 	type Props = {
@@ -43,18 +49,13 @@
 	 */
 	function handleNumber(
 		event: Event & { currentTarget: HTMLInputElement },
-		field: 'epsilon' | 'step'
+		field: NumericSettingField
 	): void {
 		const input = event.currentTarget;
 		const { settings } = editor;
-		const value = Number(input.value);
-		const isApplied =
-			field === 'epsilon'
-				? apply({ ...settings, epsilon: value })
-				: apply({ ...settings, snap: { ...settings.snap, step: value } });
+		const isApplied = apply(withNumericSetting(settings, field, Number(input.value)));
 		// 範囲外のときは、入力欄を直前の値に戻す
-		if (!isApplied)
-			input.value = String(field === 'epsilon' ? settings.epsilon : settings.snap.step);
+		if (!isApplied) input.value = String(readNumericSetting(settings, field));
 	}
 </script>
 

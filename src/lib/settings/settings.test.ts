@@ -11,9 +11,11 @@ import {
 	DEFAULT_SETTINGS,
 	loadSettings,
 	parseSettings,
+	readNumericSetting,
 	saveSettings,
 	serializeSettings,
 	validateSettings,
+	withNumericSetting,
 	type AppSettings,
 	type SettingsStorage
 } from './settings';
@@ -24,6 +26,11 @@ const CUSTOM: AppSettings = { epsilon: 0.5, snap: { enabled: false, step: 25 } }
 const TOO_LARGE_EPSILON = MAX_EPSILON * 2;
 /** 範囲を下回る ε */
 const TOO_SMALL_EPSILON = MIN_EPSILON / 2;
+
+/** 差し替え後の ε */
+const NEW_EPSILON = 0.25;
+/** 差し替え後の刻み */
+const NEW_STEP = 40;
 
 /**
  * 内容を保持する偽の保存先を生成
@@ -137,6 +144,60 @@ describe('アプリ設定', () => {
 
 		it('保存先のキーは仕様で定めた名前である', () => {
 			expect(SETTINGS_STORAGE_KEY).toBe('polyline-partition:settings');
+		});
+	});
+});
+
+describe('数値項目の差し替え', () => {
+	describe('正常系', () => {
+		it('epsilon を指定すると、ε だけが変わる', () => {
+			const next = withNumericSetting(CUSTOM, 'epsilon', NEW_EPSILON);
+
+			expect(next).toEqual({ ...CUSTOM, epsilon: NEW_EPSILON });
+		});
+
+		it('step を指定すると、刻みだけが変わり、スナップの ON / OFF は保たれる', () => {
+			const next = withNumericSetting(CUSTOM, 'step', NEW_STEP);
+
+			expect(next).toEqual({ ...CUSTOM, snap: { enabled: CUSTOM.snap.enabled, step: NEW_STEP } });
+		});
+
+		it('項目名から現在の値を取り出せる', () => {
+			expect(readNumericSetting(CUSTOM, 'epsilon')).toBe(CUSTOM.epsilon);
+			expect(readNumericSetting(CUSTOM, 'step')).toBe(CUSTOM.snap.step);
+		});
+	});
+
+	describe('異常系', () => {
+		it('範囲外の値で作った設定は、検証で拒否される', () => {
+			const next = withNumericSetting(CUSTOM, 'epsilon', TOO_LARGE_EPSILON);
+
+			expect(validateSettings(next).ok).toBe(false);
+		});
+
+		it('NaN で作った刻みは、検証で拒否される', () => {
+			const next = withNumericSetting(CUSTOM, 'step', Number.NaN);
+
+			expect(validateSettings(next).ok).toBe(false);
+		});
+	});
+
+	describe('境界条件', () => {
+		it('元の設定を書き換えない', () => {
+			const before = structuredClone(CUSTOM);
+
+			withNumericSetting(CUSTOM, 'step', NEW_STEP);
+			withNumericSetting(CUSTOM, 'epsilon', NEW_EPSILON);
+
+			expect(CUSTOM).toEqual(before);
+		});
+
+		it('上限値と下限値で作った設定は、検証を通る', () => {
+			const upper = withNumericSetting(CUSTOM, 'step', MAX_SNAP_STEP);
+			const lower = withNumericSetting(CUSTOM, 'epsilon', MIN_EPSILON);
+
+			expect(validateSettings(upper).ok).toBe(true);
+			expect(validateSettings(lower).ok).toBe(true);
 		});
 	});
 });

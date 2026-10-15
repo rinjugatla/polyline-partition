@@ -105,6 +105,41 @@ export function validateSettings(candidate: unknown): SettingsValidation {
 	return { ok: true, settings: { epsilon, snap: { enabled: snap.enabled, step: snap.step } } };
 }
 
+/** 数値の入力欄で変更できる設定の項目 */
+export type NumericSettingField = 'epsilon' | 'step';
+
+/**
+ * 設定から数値の項目の値を取り出す
+ *
+ * 範囲外の入力を取り消すとき、入力欄に戻す値の取得に使う。
+ *
+ * @param settings 設定
+ * @param field 取り出す項目
+ * @returns 項目の値
+ */
+export function readNumericSetting(settings: AppSettings, field: NumericSettingField): number {
+	return field === 'epsilon' ? settings.epsilon : settings.snap.step;
+}
+
+/**
+ * 数値の項目を差し替えた設定を作る
+ *
+ * 元の設定は書き換えない。値の範囲は検証しないので、反映前に validateSettings を通す。
+ *
+ * @param settings 元の設定
+ * @param field 差し替える項目
+ * @param value 新しい値
+ * @returns 項目を差し替えた設定
+ */
+export function withNumericSetting(
+	settings: AppSettings,
+	field: NumericSettingField,
+	value: number
+): AppSettings {
+	if (field === 'epsilon') return { ...settings, epsilon: value };
+	return { ...settings, snap: { ...settings.snap, step: value } };
+}
+
 /**
  * 設定を保存用の JSON 文字列にする
  *
