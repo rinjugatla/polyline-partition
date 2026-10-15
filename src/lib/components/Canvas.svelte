@@ -10,6 +10,7 @@
 	} from '#lib/constants.js';
 	import type { Point } from '#lib/geometry/types.js';
 	import type { EditorState } from '#lib/state/editor.svelte.js';
+	import { resolveKeyAction } from '#lib/state/keyboard.js';
 	import {
 		fitViewport,
 		panBy,
@@ -41,9 +42,6 @@
 
 	/** 中ボタンでパン中か */
 	let isPanning = $state(false);
-
-	/** プレビュー線の終点（補正後の論理座標） */
-	let previewPoint = $state.raw<Point | null>(null);
 
 	/** SVG 要素 */
 	let svg = $state<SVGSVGElement | null>(null);
@@ -115,12 +113,7 @@
 			return;
 		}
 		cursor = logicalOf(event);
-		if (editor.dragAxisBase() !== null) {
-			const point = resolved(event, editor.dragAxisBase());
-			if (point !== null) editor.dragTo(point);
-			return;
-		}
-		previewPoint = editor.mode === 'draw' ? resolved(event, editor.draft.at(-1) ?? null) : null;
+		editor.moveCursor(cursor, event.shiftKey);
 	}
 
 	/**
@@ -140,7 +133,7 @@
 			editor.select(null);
 			return;
 		}
-		const point = resolved(event, editor.draft.at(-1) ?? null);
+		const point = resolved(event, editor.draftAxisBase());
 		if (point !== null) editor.addDraftVertex(point);
 	}
 
@@ -186,11 +179,11 @@
 	 * 頂点のドラッグを始める
 	 *
 	 * @param event ポインターイベント
-	 * @param id ポリラインの ID
 	 * @param index 頂点の添字
 	 */
-	function handleHandleDown(event: PointerEvent, id: string, index: number): void {
-		if (event.button !== 0) return;
+	function handleHandleDown(event: PointerEvent, index: number): void {
+		const id = editor.selectedId;
+		if (event.button !== 0 || id === null) return;
 		event.stopPropagation();
 		svg?.setPointerCapture(event.pointerId);
 		editor.beginDrag(id, index);
@@ -204,18 +197,16 @@
 	function handleKey(event: KeyboardEvent): void {
 		const target = event.target;
 		if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
-		const isCtrl = event.ctrlKey || event.metaKey;
-		if (isCtrl && event.key.toLowerCase() === 'z') {
-			event.preventDefault();
-			if (event.shiftKey) editor.redo();
-			else editor.undo();
-		} else if (event.key === 'Enter' && editor.mode === 'draw') {
-			editor.finishDraft();
-		} else if (event.key === 'Escape') {
-			editor.cancelDraft();
-		} else if (event.key === 'Delete' && editor.mode === 'select') {
-			editor.deleteSelected();
-		}
+		const action = resolveKeyAction({
+			key: event.key,
+			isCtrl: event.ctrlKey || event.metaKey,
+			isShift: event.shiftKey,
+			mode: editor.mode
+		});
+		if (action === null) return;
+		// ブラウザ標準の Undo / Redo と二重に動かさない
+		if (action === 'undo' || action === 'redo') event.preventDefault();
+		editor.applyKeyAction(action);
 	}
 </script>
 
@@ -282,25 +273,25 @@
 				/>
 			{/each}
 
-			{#each editor.document.polylines.filter((p) => p.id === editor.selectedId) as selected (selected.id)}
-				{#each selected.vertices as vertex, index (index)}
-					{@const screen = toScreen(view, vertex)}
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<circle
-						cx={screen.x}
-						cy={screen.y}
-						r={HANDLE_RADIUS}
-						class="cursor-move fill-background stroke-blue-600"
-						stroke-width={CANVAS_STROKE_WIDTH}
-						data-testid="vertex-handle"
-						onpointerdown={(event) => handleHandleDown(event, selected.id, index)}
-					/>
-				{/each}
+			{#each editor.selectedPolyline?.vertices ?? [] as vertex, index (index)}
+				{@const screen = toScreen(view, vertex)}
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<circle
+					cx={screen.x}
+					cy={screen.y}
+					r={HANDLE_RADIUS}
+					class="cursor-move fill-background stroke-blue-600"
+					stroke-width={CANVAS_STROKE_WIDTH}
+					data-testid="vertex-handle"
+					onpointerdown={(event) => handleHandleDown(event, index)}
+				/>
 			{/each}
 
 			{#if editor.mode === 'draw' && editor.draft.length > 0}
 				<polyline
-					points={toPoints(previewPoint === null ? editor.draft : [...editor.draft, previewPoint])}
+					points={toPoints(
+						editor.previewPoint === null ? editor.draft : [...editor.draft, editor.previewPoint]
+					)}
 					fill="none"
 					stroke-width={CANVAS_STROKE_WIDTH}
 					stroke-dasharray={DRAFT_DASH_PATTERN}

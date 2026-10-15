@@ -23,6 +23,7 @@ import {
 	resizeRect
 } from './documentOps';
 import { canRedo, canUndo, commit, createHistory, redo, undo, type History } from './history';
+import type { KeyAction } from './keyboard';
 
 /** 操作モード */
 export type EditorMode = 'select' | 'draw';
@@ -68,6 +69,9 @@ export class EditorState {
 	/** 分割結果。未分割なら null */
 	result = $state.raw<PartitionResult | null>(null);
 
+	/** プレビュー線の終点（補正後の論理座標） */
+	previewPoint = $state.raw<Point | null>(null);
+
 	/** 頂点のドラッグ中の状態 */
 	#drag = $state.raw<DragState | null>(null);
 
@@ -95,6 +99,11 @@ export class EditorState {
 
 	/** 無効なポリラインの ID と理由 */
 	invalidPolylines = $derived(findInvalid(this.document, this.settings.epsilon));
+
+	/** 選択中のポリライン。未選択、または存在しなければ null */
+	selectedPolyline = $derived(
+		this.document.polylines.find((polyline) => polyline.id === this.selectedId) ?? null
+	);
 
 	/** 戻せる操作があるか */
 	canUndo = $derived(canUndo(this.#history));
@@ -142,6 +151,51 @@ export class EditorState {
 			axisBase,
 			isAxisConstrained: isShiftPressed
 		});
+	}
+
+	/**
+	 * 描画中の軸拘束の基準
+	 *
+	 * @returns 描画中の最後の頂点。なければ null
+	 */
+	draftAxisBase(): Point | null {
+		return this.draft.at(-1) ?? null;
+	}
+
+	/**
+	 * ポインターの移動を反映
+	 *
+	 * ドラッグ中は頂点を動かし、描画モードではプレビュー点を更新する。
+	 *
+	 * @param point カーソル位置の論理座標。キャンバスの外では null
+	 * @param isShiftPressed Shift が押されているか
+	 */
+	moveCursor(point: Point | null, isShiftPressed: boolean): void {
+		const dragBase = this.dragAxisBase();
+		if (dragBase !== null) {
+			if (point !== null) this.dragTo(this.resolvePoint(point, isShiftPressed, dragBase));
+			return;
+		}
+		const isPreviewable = point !== null && this.mode === 'draw';
+		this.previewPoint = isPreviewable
+			? this.resolvePoint(point, isShiftPressed, this.draftAxisBase())
+			: null;
+	}
+
+	/**
+	 * キー操作で決まった編集操作を実行
+	 *
+	 * @param action 編集操作
+	 */
+	applyKeyAction(action: KeyAction): void {
+		const handlers: Record<KeyAction, () => void> = {
+			undo: () => this.undo(),
+			redo: () => this.redo(),
+			finishDraft: () => this.finishDraft(),
+			cancelDraft: () => this.cancelDraft(),
+			deleteSelected: () => this.deleteSelected()
+		};
+		handlers[action]();
 	}
 
 	/**
