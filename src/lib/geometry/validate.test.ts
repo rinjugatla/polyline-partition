@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_EPSILON, MAX_COORDINATE } from '../constants';
-import { validatePolyline, type RuleId, type ValidationResult } from './validate';
+import {
+	isPointWithinCoordinateLimit,
+	validatePolyline,
+	type RuleId,
+	type ValidationResult
+} from './validate';
 import type { Point, RectSize } from './types';
 
 /** テスト用の基礎矩形 */
@@ -343,6 +348,50 @@ describe('ポリラインの入力検証', () => {
 			];
 
 			expect(violatedRules(vertices)).toEqual([]);
+		});
+	});
+});
+
+describe('座標の範囲判定（V-05）', () => {
+	describe('正常系', () => {
+		it('x, y とも範囲内の点は true を返す', () => {
+			expect(isPointWithinCoordinateLimit({ x: MID, y: -MID })).toBe(true);
+		});
+	});
+
+	describe('異常系', () => {
+		it('x が NaN の点は false を返す', () => {
+			expect(isPointWithinCoordinateLimit({ x: Number.NaN, y: MID })).toBe(false);
+		});
+
+		it('y が NaN の点は false を返す', () => {
+			expect(isPointWithinCoordinateLimit({ x: MID, y: Number.NaN })).toBe(false);
+		});
+
+		it('x が Infinity の点は false を返す', () => {
+			expect(isPointWithinCoordinateLimit({ x: Number.POSITIVE_INFINITY, y: MID })).toBe(false);
+		});
+
+		it('y が -Infinity の点は false を返す', () => {
+			expect(isPointWithinCoordinateLimit({ x: MID, y: Number.NEGATIVE_INFINITY })).toBe(false);
+		});
+	});
+
+	describe('境界条件', () => {
+		it('x, y がちょうど +MAX_COORDINATE の点は true を返す', () => {
+			expect(isPointWithinCoordinateLimit({ x: MAX_COORDINATE, y: MAX_COORDINATE })).toBe(true);
+		});
+
+		it('x, y がちょうど -MAX_COORDINATE の点は true を返す', () => {
+			expect(isPointWithinCoordinateLimit({ x: -MAX_COORDINATE, y: -MAX_COORDINATE })).toBe(true);
+		});
+
+		it('x が MAX_COORDINATE を超える点は false を返す', () => {
+			expect(isPointWithinCoordinateLimit({ x: MAX_COORDINATE + 1, y: MID })).toBe(false);
+		});
+
+		it('y が -MAX_COORDINATE を下回る点は false を返す', () => {
+			expect(isPointWithinCoordinateLimit({ x: MID, y: -MAX_COORDINATE - 1 })).toBe(false);
 		});
 	});
 });

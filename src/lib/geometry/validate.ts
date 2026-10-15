@@ -192,15 +192,25 @@ function violatesV04(context: RuleContext): boolean {
 }
 
 /**
+ * 点の座標が x, y とも ±MAX_COORDINATE 以内か（V-05 の判定）
+ *
+ * NaN は比較が常に偽になるため、「以内である」を肯定形で判定して取りこぼさない。
+ * ファイル読込（io）からも使い、V-05 の判定を1か所にそろえる。
+ *
+ * @param point 判定する点
+ */
+export function isPointWithinCoordinateLimit(point: Point): boolean {
+	return Math.abs(point.x) <= MAX_COORDINATE && Math.abs(point.y) <= MAX_COORDINATE;
+}
+
+/**
  * V-05 を検査
  *
  * @param context 検査の情報
  * @returns 違反か
  */
 function violatesV05(context: RuleContext): boolean {
-	// NaN は比較が常に偽になるため、「範囲内でない」を条件にして取りこぼさない
-	const isInRange = (value: number): boolean => Math.abs(value) <= MAX_COORDINATE;
-	return context.vertices.some((vertex) => !isInRange(vertex.x) || !isInRange(vertex.y));
+	return !context.vertices.every(isPointWithinCoordinateLimit);
 }
 
 /**

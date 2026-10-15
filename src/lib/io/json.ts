@@ -6,6 +6,7 @@ import {
 	MIN_RECT_SIZE
 } from '../constants';
 import type { Point, Polyline, RectSize } from '../geometry/types';
+import { isPointWithinCoordinateLimit } from '../geometry/validate';
 import type { DocumentState } from '../state/document';
 import { findInvalid } from '../state/documentOps';
 
@@ -205,18 +206,17 @@ function parseShape(parsed: unknown): ShapeResult<DocumentState> {
 /**
  * 座標がすべて ±MAX_COORDINATE に収まるかを含めて、V-01〜V-06 を検査
  *
- * V-05 は検証関数にもあるが、巨大な座標で後続の計算が壊れないよう、先に形式として弾く。
+ * V-05 の判定は検証側（geometry）の関数を共用する。V-05 に違反する座標が
+ * 後続の幾何検証へ渡らないよう、他の規則より先に検査して打ち切る。
  *
  * @param document 形式の検査を終えたドキュメント
  * @param epsilon 現在の ε
  * @returns 違反の説明。なければ空配列
  */
 function collectViolationMessages(document: DocumentState, epsilon: number): string[] {
-	const isOutOfRange = (point: Point): boolean =>
-		Math.abs(point.x) > MAX_COORDINATE || Math.abs(point.y) > MAX_COORDINATE;
 	const messages: string[] = [];
 	for (const polyline of document.polylines) {
-		if (polyline.vertices.some(isOutOfRange)) {
+		if (!polyline.vertices.every(isPointWithinCoordinateLimit)) {
 			messages.push(`${polyline.id}: [V-05] 座標が ±${MAX_COORDINATE} の範囲外です`);
 		}
 	}
