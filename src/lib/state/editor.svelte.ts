@@ -420,7 +420,7 @@ export class EditorState {
 	/** 色のシードを更新して、色を再抽選。履歴には残さず、区画数は変わらない */
 	rerollColors(): void {
 		const present = this.#history.present;
-		const colorSeed = Math.floor(Math.random() * MAX_COLOR_SEED);
+		const colorSeed = Math.floor(Math.random() * (MAX_COLOR_SEED + 1));
 		this.#history = { ...this.#history, present: { ...present, colorSeed } };
 	}
 

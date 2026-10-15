@@ -1,6 +1,13 @@
 <script lang="ts">
 	import { Button } from '#lib/components/ui/button/index.js';
-	import { HANDLE_RADIUS, SELECTED_STROKE_WIDTH, ZOOM_STEP } from '#lib/constants.js';
+	import {
+		CANVAS_STROKE_WIDTH,
+		CURSOR_DECIMALS,
+		DRAFT_DASH_PATTERN,
+		HANDLE_RADIUS,
+		SELECTED_STROKE_WIDTH,
+		ZOOM_STEP
+	} from '#lib/constants.js';
 	import type { Point } from '#lib/geometry/types.js';
 	import type { EditorState } from '#lib/state/editor.svelte.js';
 	import {
@@ -241,7 +248,7 @@
 					{ x: 0, y: editor.document.rect.height }
 				])}
 				class="fill-background stroke-foreground"
-				stroke-width="2"
+				stroke-width={CANVAS_STROKE_WIDTH}
 				data-testid="rect-frame"
 			/>
 
@@ -261,7 +268,9 @@
 				<polyline
 					points={toPoints(polyline.vertices)}
 					fill="none"
-					stroke-width={polyline.id === editor.selectedId ? SELECTED_STROKE_WIDTH : 2}
+					stroke-width={polyline.id === editor.selectedId
+						? SELECTED_STROKE_WIDTH
+						: CANVAS_STROKE_WIDTH}
 					class={invalidIds.has(polyline.id)
 						? 'stroke-red-600'
 						: polyline.id === editor.selectedId
@@ -282,7 +291,7 @@
 						cy={screen.y}
 						r={HANDLE_RADIUS}
 						class="cursor-move fill-background stroke-blue-600"
-						stroke-width="2"
+						stroke-width={CANVAS_STROKE_WIDTH}
 						data-testid="vertex-handle"
 						onpointerdown={(event) => handleHandleDown(event, selected.id, index)}
 					/>
@@ -293,8 +302,8 @@
 				<polyline
 					points={toPoints(previewPoint === null ? editor.draft : [...editor.draft, previewPoint])}
 					fill="none"
-					stroke-width="2"
-					stroke-dasharray="6 4"
+					stroke-width={CANVAS_STROKE_WIDTH}
+					stroke-dasharray={DRAFT_DASH_PATTERN}
 					class={editor.message === null ? 'stroke-blue-600' : 'stroke-red-600'}
 					data-testid="draft"
 				/>
@@ -306,7 +315,9 @@
 		class="pointer-events-none absolute bottom-2 left-2 rounded bg-background/80 px-2 py-1 text-xs"
 		data-testid="cursor-position"
 	>
-		{cursor === null ? '—' : `x: ${cursor.x.toFixed(1)}, y: ${cursor.y.toFixed(1)}`}
+		{cursor === null
+			? '—'
+			: `x: ${cursor.x.toFixed(CURSOR_DECIMALS)}, y: ${cursor.y.toFixed(CURSOR_DECIMALS)}`}
 	</div>
 
 	<div class="absolute top-2 right-2">

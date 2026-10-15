@@ -143,3 +143,12 @@ export const JSON_FILE_NAME = 'polyline-partition.json';
 
 /** SVG の出力ファイル名 */
 export const SVG_FILE_NAME = 'polyline-partition.svg';
+
+/** キャンバス上の線（枠、非選択のポリライン、頂点ハンドル、作成中の線）の太さ（px） */
+export const CANVAS_STROKE_WIDTH = 2;
+
+/** 作成中の線の破線の間隔（線の長さ、空白の長さ。px） */
+export const DRAFT_DASH_PATTERN = '6 4';
+
+/** カーソル位置の表示で使う小数の桁数 */
+export const CURSOR_DECIMALS = 1;

@@ -38,7 +38,7 @@ test.describe('保存・出力（E2E-09）', () => {
 	});
 
 	test.describe('異常系', () => {
-		test('不正な JSON を読み込むとエラーが表示され、状態は変わらない', async ({ page }) => {
+		test('E2E-16: 不正な JSON を読み込むとエラーが表示され、状態は変わらない', async ({ page }) => {
 			await page.goto('/');
 
 			await page.getByTestId('json-file-input').setInputFiles({

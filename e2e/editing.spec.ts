@@ -90,5 +90,24 @@ test.describe('編集操作（E2E-05〜08）', () => {
 			expect(ys).toHaveLength(2);
 			expect(ys[0]).toBeCloseTo(ys[1], 1);
 		});
+
+		test('E2E-08: Shift を押しながら置くと、直前の頂点から垂直にも置かれる', async ({ page }) => {
+			await page.goto('/');
+			await page.getByRole('button', { name: '描画' }).click();
+			const first = await toScreenPoint(page, { x: MID, y: OUT });
+			const second = await toScreenPoint(page, { x: MID + SKEW, y: OUT_FAR });
+			await page.mouse.click(first.x, first.y);
+
+			await page.keyboard.down('Shift');
+			await page.mouse.move(second.x, second.y);
+			await page.mouse.click(second.x, second.y);
+			await page.keyboard.up('Shift');
+			await page.keyboard.press('Enter');
+
+			const points = await page.getByTestId('polyline').getAttribute('points');
+			const xs = (points ?? '').split(' ').map((pair) => Number(pair.split(',')[0]));
+			expect(xs).toHaveLength(2);
+			expect(xs[0]).toBeCloseTo(xs[1], 1);
+		});
 	});
 });
