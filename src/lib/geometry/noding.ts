@@ -13,6 +13,8 @@ import type { Point, Polyline, RectSize, Segment } from './types';
 export type NodingResult = {
 	/** 交点などで分けた小線分。入力の線分の順に、各線分を始点から終点へ並べる */
 	readonly segments: readonly Segment[];
+	/** 各小線分が由来する入力の線分の添字（`segments` と同じ並び。弦の数え上げでポリラインごとにまとめるのに使う） */
+	readonly sourceIndices: readonly number[];
 	/** 共線で正の長さにわたって重なる組があったか（弦・交点の検算を省く判断に使う） */
 	readonly hasCollinearOverlap: boolean;
 };
@@ -163,7 +165,10 @@ function splitSegment(segment: Segment, splitPoints: readonly Point[], epsilon: 
  * @returns 小線分と、共線の重なりの有無
  */
 export function nodeSegments(segments: readonly Segment[], epsilon: number): NodingResult {
-	const valid = segments.filter((segment) => !isSamePoint(segment.start, segment.end, epsilon));
+	const sourceOfValid = [...segments.keys()].filter(
+		(index) => !isSamePoint(segments[index].start, segments[index].end, epsilon)
+	);
+	const valid = sourceOfValid.map((index) => segments[index]);
 	const splitPoints: Point[][] = valid.map(() => []);
 	let hasCollinearOverlap = false;
 
@@ -177,8 +182,10 @@ export function nodeSegments(segments: readonly Segment[], epsilon: number): Nod
 		}
 	}
 
+	const pieces = valid.map((segment, index) => splitSegment(segment, splitPoints[index], epsilon));
 	return {
-		segments: valid.flatMap((segment, index) => splitSegment(segment, splitPoints[index], epsilon)),
+		segments: pieces.flat(),
+		sourceIndices: pieces.flatMap((list, index) => list.map(() => sourceOfValid[index])),
 		hasCollinearOverlap
 	};
 }

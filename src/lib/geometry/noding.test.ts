@@ -118,6 +118,17 @@ describe('線分の収集', () => {
 
 describe('ノーディング', () => {
 	describe('正常系', () => {
+		it('小線分ごとに、由来する入力の線分の添字を返す', () => {
+			const degenerate = seg(NEAR, NEAR, NEAR, NEAR);
+			const horizontal = seg(NEAR, MID, FAR, MID);
+			const vertical = seg(MID, NEAR, MID, FAR);
+
+			const result = nodeSegments([degenerate, horizontal, vertical], DEFAULT_EPSILON);
+
+			// 長さ0の線分(添字0)は無視され、十字の2本が2つずつに分かれる
+			expect(result.sourceIndices).toEqual([1, 1, 2, 2]);
+		});
+
 		it('十字に交差する2本の線分を4つの小線分に分ける', () => {
 			const horizontal = seg(NEAR, MID, FAR, MID);
 			const vertical = seg(MID, NEAR, MID, FAR);

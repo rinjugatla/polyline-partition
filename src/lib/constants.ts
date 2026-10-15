@@ -64,3 +64,10 @@ export const MIN_POLYGON_VERTICES = 3;
  * 線分が1本もなければ線にならない。
  */
 export const MIN_VERTEX_COUNT = 2;
+
+/**
+ * 多角形の重心の公式にある、面積にかける係数（重心 = 総和 / (6 × 面積)）
+ *
+ * 靴ひも公式の外積の総和から重心を求めるときに現れる。
+ */
+export const CENTROID_AREA_FACTOR = 6;
