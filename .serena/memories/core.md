@@ -3,7 +3,7 @@
 - 基礎矩形をポリラインで区画分割し、ランダム色で塗り分ける静的 Web アプリ。面抽出は自前実装（外部の幾何ライブラリ禁止）。
 - 仕様の正は `docs/spec.md`（ID: FR / V-01..06 / E2E）。規約の正は `AGENTS.md`（`CLAUDE.md` は `@AGENTS.md` を取り込むだけ）。仕様を複製しない。仕様変更は先に spec.md を更新。
 - 既知の制約: `docs/known-limitations.md`。引き継ぎ: `docs/handoff*.md`。
-- 実装順序は spec.md 9 章（現在: 幾何プリミティブ・検証・ノーディングまで完了。次は頂点の併合 `vertexMerge.ts` → `halfEdge.ts` → `faces.ts` → `partition.ts`、その後 UI）。
+- 実装順序と進捗は spec.md 9 章と `git log` を正とする（このメモリに進捗を書かない）。
 - ソース構成:
   - `src/lib/geometry/` UI 非依存の純粋 TS（types, primitives, snap, validate, noding と同居の `*.test.ts`）
   - `src/lib/constants.ts` 数値の名前付き定数（マジックナンバー禁止、理由を TSDoc に書く）
