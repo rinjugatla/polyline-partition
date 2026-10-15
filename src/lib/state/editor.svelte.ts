@@ -55,7 +55,7 @@ export class EditorState {
 	settings = $state.raw<AppSettings>(DEFAULT_SETTINGS);
 
 	/** 操作モード */
-	mode = $state<EditorMode>('select');
+	mode = $state<EditorMode>('draw');
 
 	/** 選択中のポリラインの ID */
 	selectedId = $state<string | null>(null);

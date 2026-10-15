@@ -52,6 +52,12 @@ function drawVertical(editor: EditorState): void {
 
 describe('編集の状態', () => {
 	describe('正常系', () => {
+		it('起動時の操作モードは描画になる', () => {
+			const editor = new EditorState();
+
+			expect(editor.mode).toBe('draw');
+		});
+
 		it('描画を確定すると、ポリラインが増えて選択される', () => {
 			const editor = editorWithHorizontal();
 
